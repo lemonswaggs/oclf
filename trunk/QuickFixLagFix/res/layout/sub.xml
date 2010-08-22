@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent">
+
+	<LinearLayout android:orientation="vertical"
+		android:layout_height="wrap_content" android:layout_width="fill_parent">
+
+		<LinearLayout android:layout_width="fill_parent"
+			android:layout_height="wrap_content" android:orientation="vertical">
+			<TextView android:id="@+id/displayname"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:textSize="16sp" android:text="Initializing" />
+			<TextView android:id="@+id/longdescription"
+				android:layout_width="fill_parent" android:layout_height="wrap_content"
+				android:textSize="12sp" android:text="Initializing" />
+		</LinearLayout>
+
+		<LinearLayout android:id="@+id/mainlayout"
+			android:layout_width="fill_parent" android:layout_height="wrap_content"
+			android:orientation="vertical">
+			<ProgressBar android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:id="@+id/loading"
+				android:indeterminate="true" android:indeterminateOnly="true"
+				android:indeterminateBehavior="cycle" android:layout_gravity="center_vertical" />
+		</LinearLayout>
+
+		<Button android:id="@+id/gobutton" android:layout_width="fill_parent"
+			android:layout_height="wrap_content" android:text="Start Lagfix" />
+	</LinearLayout>
+</ScrollView>
