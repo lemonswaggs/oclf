@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent" >
+
+	<LinearLayout android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:orientation="vertical">
+		<TextView android:id="@+id/status" android:layout_width="fill_parent"
+			android:layout_height="wrap_content" android:textSize="16sp" android:text="Initializing" android:visibility="gone" />
+		<TextView android:id="@+id/lastresult" android:layout_width="fill_parent"
+			android:layout_height="wrap_content" android:textSize="14sp" android:text="Initializing" android:visibility="gone" />
+	</LinearLayout>
+
+	<ListView android:id="@id/android:list" android:layout_width="fill_parent"
+		android:layout_height="fill_parent" android:stackFromBottom="true" android:transcriptMode="normal" />
+</LinearLayout>

@@ -1,0 +1,3 @@
+#!/system/bin/sh
+sh /system/bin/userinit.sh
+playlogosnow
