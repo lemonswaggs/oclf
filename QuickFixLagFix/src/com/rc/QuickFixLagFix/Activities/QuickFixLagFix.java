@@ -28,7 +28,7 @@ import com.rc.QuickFixLagFix.lib.StatusListener;
 
 public class QuickFixLagFix extends ListActivity implements StatusListener {
 
-	final static String VERSION = "1.3";
+	final static String VERSION = "1.4";
 	static final int DIALOG_FORCE_CLOSE = 0;
 
 	@Override

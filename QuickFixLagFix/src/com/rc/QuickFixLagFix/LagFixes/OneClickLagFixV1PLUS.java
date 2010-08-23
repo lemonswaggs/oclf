@@ -104,8 +104,8 @@ public class OneClickLagFixV1PLUS extends LagFix {
 			long bytecountfree = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
 			long bytecountused = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree;
 
-			final long minsize = bytecountused + 1024L * 1024L * 10;
-			final long maxsize = bytecountfree - 1024L * 1024L * 10;
+			final long minsize = bytecountused + 1024L * 1024L * 100;
+			final long maxsize = bytecountfree - 1024L * 1024L * 200;
 			long curval = minsize + progress * (maxsize - minsize) / 10000;
 
 			UpdateStatus("Creating " + Utils.FormatByte(curval) + " file to store data inside. This could take a long time...");
@@ -237,7 +237,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
-		LagFixSeekOption lagFixSeekOption = new LagFixSeekOption("ext2size", "EXT Size", "Size of EXT2 partition", 5000);
+		LagFixSeekOption lagFixSeekOption = new LagFixSeekOption("ext2size", "EXT Size", "Size of EXT2 partition", 9900);
 		lagFixSeekOption.setUpdatehandler(new SeekOptionUpdate(lagFixSeekOption) {
 
 			@Override
