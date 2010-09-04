@@ -3,6 +3,7 @@ package com.rc.QuickFixLagFix.LagFixes;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -13,7 +14,6 @@ import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixSeekOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixSeekOption.SeekOptionUpdate;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
@@ -310,7 +310,7 @@ public class OneClickLagFixV2_3 extends LagFix {
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) throws Exception {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		StatFs statfs = new StatFs("/data/");
 		VirtualTerminal vt = new VirtualTerminal();
 
@@ -341,7 +341,7 @@ public class OneClickLagFixV2_3 extends LagFix {
 		});
 		lagFixOptions.add(lagFixSeekOption);
 
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
 	}
 
 	@Override

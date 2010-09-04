@@ -1,6 +1,7 @@
 package com.rc.QuickFixLagFix.LagFixes;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -8,7 +9,6 @@ import android.os.StatFs;
 
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.Utils;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
 
@@ -51,11 +51,11 @@ public class CheckFreeSpaceLagFix extends LagFix {
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 		
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
 	}
 
 }

@@ -157,6 +157,7 @@ public class ProgressViewActivity extends ListActivity implements StatusListener
 					StringBuilder buf = new StringBuilder();
 					buf.append("Contact: "+contact.getText().toString()+"\n");
 					buf.append("Firmware: "+firmware.getText().toString()+"\n");
+					buf.append("Version: "+QuickFixLagFix.VERSION+"\n");
 					buf.append("\n");
 					for (LogRow row : lagFix.getStatusLog()) {
 						buf.append(row.LogTime.toString()+": "+row.LogMessage+"\n");

@@ -3,6 +3,7 @@ package com.rc.QuickFixLagFix.LagFixes;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -13,7 +14,6 @@ import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixSeekOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixSeekOption.SeekOptionUpdate;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
@@ -46,13 +46,9 @@ public class OneClickLagFixV1PLUS extends LagFix {
 		if (!r.success())
 			return "Root is required to run this fix.";
 
-		r = cmd.su.busyboxWaitFor("");
-		if (!r.success() || !r.stdout.contains("BusyBox v1.17.1"))
-			return "Packaged BusyBox v1.17.1 is required for this fix. Install it from the menu.";
-
 		if (!EXT2ToolsLagFix.IsInstalled())
-			return "You must install EXT2Tools to use this lag fix.";
-
+			return "You must install EXT2Tools from the menu to use this lag fix.";
+		
 		StatFs statfs = new StatFs("/data/");
 		long bytecountfree = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
 		long bytecountused = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree;
@@ -217,6 +213,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 //				r = vt.busybox("rm -rf /data/" + dir + ".bak");
 //			}
 			UpdateStatus("System will reboot in 10 seconds, to ensure everything works properly.");
+			vt.FNF("sync");
 			Thread.sleep(10000);
 			vt.FNF("reboot");
 		} finally {
@@ -227,7 +224,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		StatFs statfs = new StatFs("/data/");
 		long bytecountfree = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
 		long bytecountused = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree;
@@ -237,7 +234,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
-		LagFixSeekOption lagFixSeekOption = new LagFixSeekOption("ext2size", "EXT Size", "Size of EXT2 partition", 9900);
+		LagFixSeekOption lagFixSeekOption = new LagFixSeekOption("ext2size", "EXT Size", "Size of EXT2 partition", 4500);
 		lagFixSeekOption.setUpdatehandler(new SeekOptionUpdate(lagFixSeekOption) {
 
 			@Override
@@ -248,7 +245,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 		});
 		lagFixOptions.add(lagFixSeekOption);
 
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
 	}
 
 	@Override

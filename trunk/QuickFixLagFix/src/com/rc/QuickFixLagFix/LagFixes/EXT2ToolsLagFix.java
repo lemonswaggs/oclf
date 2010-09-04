@@ -2,6 +2,7 @@ package com.rc.QuickFixLagFix.LagFixes;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -11,7 +12,6 @@ import android.util.Log;
 import com.rc.QuickFixLagFix.R;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
@@ -93,8 +93,16 @@ public class EXT2ToolsLagFix extends LagFix {
 
 	@Override
 	public String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error {
+		VTCommandResult cr = vt.runCommand("mount");
+		if (cr.stdout.contains("/dev/block/stl9 /system rfs ro")) {
+			UpdateStatus("Your /system appears to be read only, remounts as read-write");
+			cr = vt.runCommand("mount -o remount,rw /dev/block/stl9 /system");
+			if (!cr.success()) {
+				return "Could not mount /system as read-write: "+cr.stderr;
+			}
+		}		
 		UpdateStatus("Creating folder /data/oclf");
-		VTCommandResult cr = vt.runCommand("mkdir /data/oclf");
+		vt.runCommand("mkdir /data/oclf");
 		if (!cr.success())
 			if (!cr.stderr.contains("File exists"))
 				return "Could not create folder /data/oclf: "+cr.stderr;
@@ -119,7 +127,7 @@ public class EXT2ToolsLagFix extends LagFix {
 			int library_id = libraries_id[i];
 			VTCommandResult r = Utils.CopyIncludedFiletoPath(library_id, library, "/system/lib/"+library, ApplicationContext, vt);
 			if (!r.success())
-				return "Could not copy binary "+library+": "+r.stderr;
+				return "Could not copy library "+library+": "+r.stderr;
 			r = vt.runCommand("chmod 644 /system/lib/"+library);
 			if (!r.success())
 				return "Could not set permissions for "+library+": "+r.stderr;
@@ -129,10 +137,15 @@ public class EXT2ToolsLagFix extends LagFix {
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
+	}
+	
+	@Override
+	public boolean CanForce() {
+		return true;
 	}
 
 }

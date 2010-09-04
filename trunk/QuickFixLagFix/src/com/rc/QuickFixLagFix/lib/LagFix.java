@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -21,13 +23,20 @@ public abstract class LagFix {
 	List<LogRow> statusLog = new ArrayList<LogRow>();
 	public WeakReference<StatusListener> statusListenerWR;
 	
-	public boolean EnabledStatus = false;
+	public final static int LAGFIX_ENABLED = 2;
+	public final static int LAGFIX_DISABLED = 1;
+	public final static int LAGFIX_UNKNOWN = 0;
+	
+	public int EnabledStatus = LAGFIX_UNKNOWN;
 	public String DisabledReason = INITIALIZING;
 
 	public abstract String GetDisplayName();
 	public abstract String GetShortDescription();
 	public abstract String GetLongDescription();
 	public abstract String GetFeedbackLogEmailAddress();
+	public boolean CanForce() {
+		return false;
+	}
 	
 	public String GetStatus() {
 		return Status;
@@ -53,7 +62,16 @@ public abstract class LagFix {
 	
 	public abstract String IsEnabled(Context ApplicationContext) throws Exception, Error;
 	public abstract String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error;
-	public abstract void GetOptions(OptionListener listener) throws Exception, Error;
+	protected abstract List<LagFixOption> GetOptions() throws Exception, Error;
+	
+	public void RunGetOptions(OptionListener listener) {
+		try {
+			List<LagFixOption> lagFixOptions = GetOptions();
+			listener.LagFixOptionListCompleted(lagFixOptions);
+		} catch (Exception ex) {
+			listener.LagFixOptionListFailed(ex);						
+		}		
+	}
 	
 	public static String GetTextFromStream(InputStream is) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -66,7 +84,7 @@ public abstract class LagFix {
 		return new String(baos.toByteArray());
 	}
 	
-	public final boolean getEnabledStatus() {
+	public final int getEnabledStatus() {
 		return EnabledStatus;
 	}
 	public final String getDisabledReason() {
@@ -75,13 +93,13 @@ public abstract class LagFix {
 	public final void doEnabledTest(Context ApplicationContext) {
 		try {
 			String EnabledResult = IsEnabled(ApplicationContext);
-			EnabledStatus = LagFix.ENABLED.equals(EnabledResult);
+			EnabledStatus = LagFix.ENABLED.equals(EnabledResult) ? LAGFIX_ENABLED : LAGFIX_DISABLED;
 			DisabledReason = EnabledResult;
 		} catch (Exception ex) {
-			EnabledStatus = false;
+			EnabledStatus = LAGFIX_DISABLED;
 			DisabledReason = ex.getLocalizedMessage();
 		} catch (Error ex) {
-			EnabledStatus = false;
+			EnabledStatus = LAGFIX_DISABLED;
 			DisabledReason = ex.getLocalizedMessage();			
 		}
 	}
