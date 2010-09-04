@@ -3,6 +3,7 @@ package com.rc.QuickFixLagFix.LagFixes;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -13,7 +14,6 @@ import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixSeekOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixSeekOption.SeekOptionUpdate;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
@@ -230,7 +230,7 @@ public class OneClickLagFixV1 extends LagFix {
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		StatFs statfs = new StatFs("/data/");
 		long bytecountfree = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
 		long bytecountused = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree;
@@ -251,7 +251,7 @@ public class OneClickLagFixV1 extends LagFix {
 		});
 		lagFixOptions.add(lagFixSeekOption);
 
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
 	}
 
 	@Override

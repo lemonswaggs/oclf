@@ -40,13 +40,7 @@ public class OptionActivity extends Activity implements OptionListener {
 		
 		new Thread(){
 			public void run() {
-				try {
-					lagFix.GetOptions(OptionActivity.this);
-				} catch (Exception e) {
-					e.printStackTrace();
-				} catch (Error e) {
-					e.printStackTrace();
-				}
+				lagFix.RunGetOptions(OptionActivity.this);
 			};
 		}.start();
 		
@@ -116,6 +110,28 @@ public class OptionActivity extends Activity implements OptionListener {
 				
 				Button GoButton = (Button) findViewById(R.id.gobutton);
 				GoButton.setVisibility(View.VISIBLE);
+				ProgressBar loading = (ProgressBar) findViewById(R.id.loading);
+				loading.setVisibility(View.GONE);
+			}
+		});
+	}
+
+	@Override
+	public void LagFixOptionListFailed(final Exception e) {
+		runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				LinearLayout mainLayout = (LinearLayout) findViewById(R.id.mainlayout);
+				
+				TextView tv = new TextView(getBaseContext());
+				tv.setText("An error has occurred retrieving the option list!");
+				mainLayout.addView(tv);
+				
+				tv = new TextView(getBaseContext());
+				tv.setText(e.getLocalizedMessage());
+				mainLayout.addView(tv);
+
 				ProgressBar loading = (ProgressBar) findViewById(R.id.loading);
 				loading.setVisibility(View.GONE);
 			}

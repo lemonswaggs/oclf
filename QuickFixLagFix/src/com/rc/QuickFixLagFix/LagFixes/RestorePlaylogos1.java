@@ -1,6 +1,7 @@
 package com.rc.QuickFixLagFix.LagFixes;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -9,7 +10,6 @@ import android.os.StatFs;
 import com.rc.QuickFixLagFix.R;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
@@ -39,16 +39,8 @@ public class RestorePlaylogos1 extends LagFix {
 		if (!r.success())
 			return "Root is required to run this fix.";
 
-		r = cmd.su.busyboxWaitFor("");
-		if (!r.success() || !r.stdout.contains("BusyBox v1.17.1"))
-			return "Included BusyBox v1.17.1 is required for this fix.";
-
-		StatFs statfs = new StatFs("/data/");
-		long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
-		statfs.restat("/data/data/");
-		long datadata_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
-		if (data_total != datadata_total)
-			return "You appear to have a lagfix installed! Replacing the bootlogo in this case could cause your device to become un-bootable. (free space on /data matches /data/data)";
+		if (!EXT2ToolsLagFix.IsInstalled())
+			return "You must install EXT2Tools from the menu to use this lag fix.";
 
 //		try {
 //			if (Utils.GetMD5Hash("/system/bin/playlogos1").equalsIgnoreCase(MD5Hashes.playlogos1))
@@ -61,20 +53,35 @@ public class RestorePlaylogos1 extends LagFix {
 
 	@Override
 	public String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error {
-		UpdateStatus("Removing any old playlogos1 file");
-		vt.busybox("rm /system/bin/playlogos1");
-		UpdateStatus("Copying over included playlogos1 file");
-		Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogos1", ApplicationContext, vt);
-		UpdateStatus("Setting permissions...");
-		vt.busybox("chmod 755 /system/bin/playlogos1");
+		
+		StatFs statfs = new StatFs("/data/");
+		long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+		statfs.restat("/data/data/");
+		long datadata_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+		if (data_total == datadata_total) {
+			UpdateStatus("Removing any old playlogos1 file");
+			vt.busybox("rm /system/bin/playlogos1");
+			UpdateStatus("Copying over included playlogos1 file");
+			Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogos1", ApplicationContext, vt);
+			UpdateStatus("Setting permissions...");
+			vt.busybox("chmod 755 /system/bin/playlogos1");
+		} else {
+			UpdateStatus("You already appear to have a lagfix installed. Updating playlogosnow instead of playlogos1");
+			vt.busybox("rm /system/bin/playlogosnow");
+			UpdateStatus("Copying over included playlogos1 file");
+			Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogosnow", ApplicationContext, vt);
+			UpdateStatus("Setting permissions...");
+			vt.busybox("chmod 755 /system/bin/playlogosnow");
+		}
+		
 		return SUCCESS;
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
 	}
 
 	@Override

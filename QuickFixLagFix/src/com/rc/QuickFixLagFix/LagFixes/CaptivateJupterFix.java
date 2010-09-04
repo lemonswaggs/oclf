@@ -2,6 +2,7 @@ package com.rc.QuickFixLagFix.LagFixes;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -10,7 +11,6 @@ import com.rc.QuickFixLagFix.R;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
 import com.rc.QuickFixLagFix.lib.MD5Hashes;
-import com.rc.QuickFixLagFix.lib.OptionListener;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
@@ -66,10 +66,10 @@ public class CaptivateJupterFix extends LagFix {
 	}
 
 	@Override
-	public void GetOptions(OptionListener listener) {
+	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
-		listener.LagFixOptionListCompleted(lagFixOptions);
+		return lagFixOptions;
 	}
 
 	@Override

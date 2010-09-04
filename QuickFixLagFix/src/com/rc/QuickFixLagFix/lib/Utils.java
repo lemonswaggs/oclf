@@ -15,7 +15,6 @@ import android.content.IntentFilter;
 import android.provider.Settings;
 
 import com.rc.QuickFixLagFix.R;
-import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
 public class Utils {
@@ -84,11 +83,24 @@ public class Utils {
 		return vt.runCommand("dd if=" + FromPath + " of=" + ToPath);
 	}
 	
-	public static CommandResult CopyIncludedFiletoPath(int resourceid, String filename, String ToPath, Context ApplicationContext) throws Exception {
-		ShellCommand sh = new ShellCommand();
-		SaveIncludedFileIntoFilesFolder(resourceid, filename, ApplicationContext);
-		String FromPath = ApplicationContext.getFilesDir() + "/" + filename;
-		return sh.sh.runWaitFor("dd if=" + FromPath + " of=" + ToPath);
+	public static void CopyIncludedFiletoPath(int resourceid, String ToPath, Context ApplicationContext) throws Exception {
+//		ShellCommand sh = new ShellCommand();
+//		SaveIncludedFileIntoFilesFolder(resourceid, filename, ApplicationContext);
+//		String FromPath = ApplicationContext.getFilesDir() + "/" + filename;
+//		sh.sh.runWaitFor("rm "+ToPath);
+//		return sh.sh.runWaitFor("dd if=" + FromPath + " of=" + ToPath);
+		
+		InputStream is = ApplicationContext.getResources().openRawResource(resourceid);
+		FileOutputStream fos = new FileOutputStream(ToPath);
+		byte[] bytebuf = new byte[1024];
+		int read;
+		while ((read = is.read(bytebuf)) >= 0) {
+			fos.write(bytebuf, 0, read);
+		}
+		is.close();
+		fos.getChannel().force(true);
+		fos.flush();
+		fos.close();
 	}
 	
 	public static void SetupBootSupport(String filename, VirtualTerminal vt) throws Exception {

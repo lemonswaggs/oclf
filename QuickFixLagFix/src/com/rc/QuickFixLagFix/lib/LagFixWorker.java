@@ -8,9 +8,12 @@ import android.content.Context;
 import android.os.PowerManager;
 
 import com.rc.QuickFixLagFix.LagFixes.CaptivateJupterFix;
+import com.rc.QuickFixLagFix.LagFixes.ChangeSchedulerLagFix;
 import com.rc.QuickFixLagFix.LagFixes.CheckFreeSpaceLagFix;
 import com.rc.QuickFixLagFix.LagFixes.EXT2ToolsLagFix;
+import com.rc.QuickFixLagFix.LagFixes.InstallFontLagFix;
 import com.rc.QuickFixLagFix.LagFixes.OneClickLagFixV1PLUS;
+import com.rc.QuickFixLagFix.LagFixes.RemoveEXT2ToolsLagFix;
 import com.rc.QuickFixLagFix.LagFixes.RestorePlaylogos1;
 import com.rc.QuickFixLagFix.LagFixes.RootLagFix;
 import com.rc.QuickFixLagFix.LagFixes.UnRootLagFix;
@@ -31,6 +34,9 @@ public class LagFixWorker {
 		WorkerInstance.RegisterLagFix(new UnRootLagFix());
 		WorkerInstance.RegisterLagFix(new CaptivateJupterFix());
 		WorkerInstance.RegisterLagFix(new RestorePlaylogos1());
+		WorkerInstance.RegisterLagFix(new RemoveEXT2ToolsLagFix());
+		WorkerInstance.RegisterLagFix(new ChangeSchedulerLagFix());
+		WorkerInstance.RegisterLagFix(new InstallFontLagFix());
 		//WorkerInstance.RegisterLagFix(new TestLagFix());
 	}
 
@@ -49,6 +55,16 @@ public class LagFixWorker {
 	public List<LagFix> getLagFixList() {
 		return LagFixList;
 	}
+	
+	public List<LagFix> getEnabledList(int EnabledStatus) {
+		List<LagFix> list = new ArrayList<LagFix>();
+		for (LagFix fix : LagFixList) {
+			if (fix.getEnabledStatus() == EnabledStatus) {
+				list.add(fix);
+			}				
+		}
+		return list;
+	}
 
 	public void RegisterLagFix(LagFix lf) {
 		LagFixList.add(lf);
@@ -62,7 +78,7 @@ public class LagFixWorker {
 	}
 	
 	public synchronized void doLagFixChecks(Context ApplicationContext) throws IllegalStateException {
-		if (System.currentTimeMillis()-LastLagFixCheckTime<30000)
+		if (System.currentTimeMillis()-LastLagFixCheckTime<120000)
 			return;
 		if (CurrentLagFixChecker != null)
 			return;
@@ -99,9 +115,11 @@ public class LagFixWorker {
 			String result = null;
 			try {
 				CurrentLagFix.getStatusLog().clear();
-				result = CurrentLagFix.IsEnabled(ApplicationContext);
-				if (!result.equals(LagFix.ENABLED))
-					throw new Exception("Lagfix failed test: "+result);
+				if (!CurrentLagFix.CanForce()) {
+					result = CurrentLagFix.IsEnabled(ApplicationContext);
+					if (!result.equals(LagFix.ENABLED))
+						throw new Exception("Lagfix failed test: "+result);
+				}
 				VirtualTerminal vt = null;
 				try {
 					vt = new VirtualTerminal();
@@ -111,6 +129,7 @@ public class LagFixWorker {
 				} catch (BrokenPipeException bpe) {
 					// Broken pipe exception means we should try it again.
 					vt = null;
+					Thread.sleep(2500);
 					try {
 						vt = new VirtualTerminal();
 					} catch (Exception ex2) {}
@@ -166,19 +185,18 @@ class LagFixChecker extends Thread {
 	@Override
 	public void run() {
 		for (LagFix lagFix : workerInstance.LagFixList) {
-			lagFix.EnabledStatus = false;
+			lagFix.EnabledStatus = LagFix.LAGFIX_UNKNOWN;
 			lagFix.DisabledReason = LagFix.INITIALIZING;
 		}
-
 		for (int i=0;i<workerInstance.LagFixList.size();i++) {
 			LagFix lagFix = workerInstance.LagFixList.get(i);
-			lagFix.doEnabledTest(ApplicationContext);
-			
 			StatusListener listener = lagFix.statusListenerWR.get();
 			if (listener != null)
+				listener.Update(i*10000/workerInstance.LagFixList.size());			
+			lagFix.doEnabledTest(ApplicationContext);			
+			if (listener != null)
 				listener.Update((i+1)*10000/workerInstance.LagFixList.size());
-		}
-		
+		}		
 
 		workerInstance.CurrentLagFixChecker = null;
 		workerInstance.LagFixCheckRunning = false;
