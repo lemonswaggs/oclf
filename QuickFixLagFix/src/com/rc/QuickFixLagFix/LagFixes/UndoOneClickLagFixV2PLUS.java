@@ -1,5 +1,6 @@
 package com.rc.QuickFixLagFix.LagFixes;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -16,25 +17,24 @@ import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
-import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
-public class UndoOneClickLagFixV1PLUS extends LagFix {
+public class UndoOneClickLagFixV2PLUS extends LagFix {
 
 	final static String[] dataDirectories = new String[]{"data", "system", "dalvik-cache", "app", "app-private"};
 	
 	@Override
 	public String GetDisplayName() {
-		return "Undo OneClickLagFix V1+";
+		return "Undo OneClickLagFix V2+";
 	}
 
 	@Override
 	public String GetShortDescription() {
-		return "Will remove OneClickLagFix V1 PLUS.";
+		return "Will remove OneClickLagFix V2 PLUS.";
 	}
 
 	@Override
 	public String GetLongDescription() {
-		return "This will remove OneClickLagFix V1 PLUS. This should not affect your apps or data.";
+		return "This will remove OneClickLagFix V2 PLUS. This should not affect your apps or data.";
 	}
 
 	@Override
@@ -47,15 +47,6 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 		if (!EXT2ToolsLagFix.IsInstalled())
 			return "You must install EXT2Tools from the menu to use this lag fix.";
 
-		StatFs statfs = new StatFs("/data/");
-		long bytecountfree_rfs = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
-		statfs = new StatFs("/data/data/");
-		long bytecountfree_ext2 = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
-		long bytecountused_ext2 = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree_ext2;
-
-		if (bytecountused_ext2 > bytecountfree_rfs)
-			return "You have only "+Utils.FormatByte(bytecountfree_rfs)+" free on RFS, but "+Utils.FormatByte(bytecountused_ext2)+" used on EXT2. You must free up some space.";
-
 		if (Utils.GetBatteryLevel(ApplicationContext) < 40) {
 			return "You need at least 40% battery charge to use this fix.";
 		}
@@ -65,12 +56,16 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 			rfile = new RandomAccessFile("/system/bin/playlogos1", "r");
 			if (rfile.getChannel().size() > 5000)
 				return "You do not appear to have a lagfix installed. (/system/bin/playlogos1 greater than 5KB)";
-			statfs.restat("/data/");
+			StatFs statfs = new StatFs("/data/");
 			long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
-			statfs.restat("/data/data/");
-			long datadata_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
-			if (data_total == datadata_total)
-				return "You do not appear to have a V1 lagfix installed! (free space on /data matches /data/data)";
+			File ext2data = new File("/dbdata/ext2data");
+			if (!ext2data.exists() || !ext2data.isDirectory()) {
+				return "You do not appear to have a V2 lagfix installed! (/dbdata/ext2data does not exist)";
+			}
+			statfs.restat("/dbdata/ext2data/");
+			long ext2data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+			if (data_total != ext2data_total)
+				return "You do not appear to have a V2 lagfix installed! (free space on /data does not match /dbdata/ext2data)";
 		} catch (FileNotFoundException ex) {
 			return "You do not have a /system/bin/playlogos1 file!";
 		} finally {
@@ -96,17 +91,10 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 		
 		try {
 			String Hash = Utils.GetMD5Hash("/system/bin/userinit.sh");
-			if (!Hash.equalsIgnoreCase(MD5Hashes.oclfv1_plus)) 
-				return "You do not have OCLF V1 PLUS installed. userinit.sh does not match signature.";
+			if (!Hash.equalsIgnoreCase(MD5Hashes.oclfv2_plus)) 
+				return "You do not have OCLF V2 PLUS installed. userinit.sh does not match signature.";
 		} catch (FileNotFoundException ex) {
-			return "You do not have OCLF V1 PLUS installed. userinit.sh not found.";
-		}
-		
-		for (String dir : dataDirectories) {
-			r = cmd.su.busyboxWaitFor("test -L /data/" + dir);
-			if (!r.success()) {
-				return "You do not have OCLF V1 installed. /data/"+dir+" is not a symlink";
-			}
+			return "You do not have OCLF V2 PLUS installed. userinit.sh not found.";
 		}
 
 		return ENABLED;
@@ -119,47 +107,37 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 		try {
 			Utils.KillAllRunningApps(ApplicationContext);
 			
-			UpdateStatus("Removing old backups");
+			UpdateStatus("Removing old backups. This could take some time.");
 			for (String dir : dataDirectories) {
-				vt.busybox("rm -rf /data/" + dir + ".bak");
+				vt.busybox("rm -rf /dbdata/rfsdata/" + dir);
 			}
 			
-			vt.busybox("rm -rf /data/bak");
-			vt.busybox("mkdir -p /data/bak");
-			for (String dir : dataDirectories) {
-				UpdateStatus("Copying "+dir+" back to RFS from EXT2");
-				vt.busybox("cp -rp /data/ext2data/"+dir+" /data/bak/"+dir );
-//				VTCommandResult r = vt.busybox("cp -rp /data/ext2data/"+dir+" /data/bak/"+dir );
-//				if (!r.success()) {
-//					vt.busybox("rm -rf /data/bak");
-//					return "Could not copy your data back! This is probably because something changed in your data while the undo was running. Try it again, and see if the problem persists. Error: "+r.stderr;
-//				}	
-			}
-			
-			UpdateStatus("Removing Symlinks, possible FCs at this point.");
-			for (String dir : dataDirectories) {
-				VTCommandResult r = vt.busybox("rm /data/" + dir);
-				if (!r.success()) {
-					return "Could not remove symlinks! This is bad, and something has gone very wrong.";
-				}				
-			}
-			
-			for (String dir : dataDirectories) {
-				VTCommandResult r = vt.busybox("mv /data/bak/" + dir+" /data/"+dir);
-				if (!r.success()) {
-					return "Could not rename your data! This is bad, and something has gone very wrong.";
-				}				
-			}
+			UpdateStatus("Checking to see if enough space is available on RFS...");
+			StatFs statfs = new StatFs("/dbdata/rfsdata/");
+			long bytecountfree_rfs = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
+			statfs = new StatFs("/data/");
+			long bytecountfree_ext2 = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
+			long bytecountused_ext2 = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree_ext2;
+
+			if (bytecountused_ext2 > bytecountfree_rfs)
+				return "You have only "+Utils.FormatByte(bytecountfree_rfs)+" free on RFS, but "+Utils.FormatByte(bytecountused_ext2)+" used on EXT2. You must free up some space.";
+
+			UpdateStatus("Copying data back from EXT2 to RFS. This could take a long time...");
+			vt.runCommand("sync");
+			vt.busybox("cp -rp /data/* /dbdata/rfsdata/");
+			//VTCommandResult r = vt.busybox("cp -rp /data/* /dbdata/rfsdata/");
+			//if (!r.success())
+			//	return "Could not copy your data back to RFS. Please try this again after stopping or removing all background apps."+r.stderr;
+			// This check is removed, since we'r going to get errors anyway 'same file' for /data/wifi, etc. Need a workaround maybe?
 			
 			UpdateStatus("Removing boot support");
 			Utils.RemoveBootSupport(vt);
 			
-			UpdateStatus("Removing old datafile");
-			vt.busybox("rm /data/linux.ex2");
+			UpdateStatus("Removing old datafile. If the system crashes at this point, just restart your device.");
+			vt.busybox("rm -rf /dbdata/rfsdata/ext2");
 
-			UpdateStatus("System will reboot in 10 seconds, to ensure everything works properly.");
+			UpdateStatus("System will reboot, to ensure everything works properly.");
 			vt.FNF("sync");
-			Thread.sleep(10000);
 			vt.FNF("reboot");
 		} finally {
 			Utils.DisableFlightMode(ApplicationContext);

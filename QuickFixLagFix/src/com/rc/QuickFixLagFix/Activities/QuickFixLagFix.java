@@ -8,12 +8,11 @@ import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -24,6 +23,7 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TabHost.TabContentFactory;
@@ -36,10 +36,12 @@ import com.rc.QuickFixLagFix.lib.StatusListener;
 
 public class QuickFixLagFix extends TabActivity implements StatusListener {
 
-	final static String VERSION = "1.6.0";
+	final static String VERSION = "2.0.4";
 	static final int DIALOG_FORCE_CLOSE = 0;
+	static final int DIALOG_HELP = 1;
 	public static final String PREFS_NAME = "OCLFPrefs";
 	public static final String PREFS_ADS = "AdsEnabled";
+	public static final String FIRST_LOAD = "FirstLoad";
 
 	FixListAdapter enabledAdapter;
 	FixListAdapter disabledAdapter;
@@ -48,21 +50,6 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
-        long idleMillis =
-            Settings.Secure.getLong(getContentResolver(),
-                                    "wifi_idle_ms", 27382176213L);
-        Settings.Secure.putLong(getContentResolver(), "wifi_idle_ms", 2000);
-        Log.i("wifi_idle_ms", ""+idleMillis);
-        idleMillis =
-            Settings.Secure.getLong(getContentResolver(),
-                                    "wifi_idle_ms", 27382176213L);
-        Log.i("wifi_idle_ms", ""+idleMillis);
-        int stayAwakeConditions =
-            Settings.System.getInt(getContentResolver(),
-                                   Settings.System.STAY_ON_WHILE_PLUGGED_IN, 0);
-        Log.i("stayAwakeConditions", ""+stayAwakeConditions);
-
 
 		enabledAdapter = new FixListAdapter(this, LagFixWorker.getBackgroundWorker().getEnabledList(LagFix.LAGFIX_ENABLED));
 		disabledAdapter = new FixListAdapter(this, LagFixWorker.getBackgroundWorker().getEnabledList(LagFix.LAGFIX_DISABLED));
@@ -76,6 +63,11 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 			setContentView(R.layout.mainwadd);
 		} else {
 			setContentView(R.layout.main);
+		}
+		
+		boolean FirstLoad = settings.getBoolean(FIRST_LOAD, true);
+		if (FirstLoad) {
+			showDialog(DIALOG_HELP);
 		}
 
 		TabHost tabHost = getTabHost(); // The activity TabHost
@@ -210,6 +202,8 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 				startActivity(i);
 				finish();
 				return true;
+			case R.id.help :
+				showDialog(DIALOG_HELP);
 			default :
 				return super.onOptionsItemSelected(item);
 		}
@@ -231,6 +225,29 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 					}
 				});
 				dialog = builder.create();
+				return dialog;
+			case DIALOG_HELP :
+				dialog = new Dialog(this);
+				dialog.setContentView(R.layout.helpdialog);
+				dialog.setTitle("Information");
+				Button dismiss = (Button) dialog.findViewById(R.id.dismiss);
+				dismiss.setOnClickListener(new View.OnClickListener() {
+					
+					@Override
+					public void onClick(View arg0) {
+						dismissDialog(DIALOG_HELP);
+					}
+				});
+				dialog.setOnDismissListener(new OnDismissListener() {
+					
+					@Override
+					public void onDismiss(DialogInterface dialog) {
+						SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+						SharedPreferences.Editor editor = settings.edit();
+						editor.putBoolean(FIRST_LOAD, false);
+						editor.commit();
+					}
+				});
 				return dialog;
 		}
 		return null;

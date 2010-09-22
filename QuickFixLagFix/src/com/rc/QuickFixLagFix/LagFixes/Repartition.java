@@ -8,66 +8,59 @@ import android.content.Context;
 
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.ShellCommand;
-import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
+import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
-public class UnRootLagFix extends LagFix {
+public class Repartition extends LagFix {
 
 	@Override
 	public String GetDisplayName() {
-		return "Un-Root Device";
+		return "Repartition";
 	}
 
 	@Override
 	public String GetShortDescription() {
-		return "This will un-root your device.";
+		return "Repartition";
 	}
 
 	@Override
 	public String GetLongDescription() {
-		return "Run this to un-root your device.";
+		return "Repartition";
+	}
+
+	@Override
+	public String GetFeedbackLogEmailAddress() {
+		return "Repartition";
 	}
 
 	@Override
 	public String IsEnabled(Context ApplicationContext) throws Exception, Error {
-		ShellCommand cmd = new ShellCommand();
-		CommandResult r = cmd.su.runWaitFor("id");
-		if (!r.success())
-			return "Your device is not rooted.";
-		
 		return ENABLED;
 	}
 
 	@Override
 	public String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error {
-		UpdateStatus("Removing root...");
-		vt.runCommand("rm /system/bin/su");
-		vt.runCommand("rm /system/xbin/su");
-		vt.runCommand("rm /system/xbin/busybox");
-		vt.runCommand("rm /system/app/Superuser.apk");
-		vt.FNF("sync");
-		vt.FNF("reboot");
+		VTCommandResult r;
+//		vt.runCommand("umount /mnt/sdcard/external_sd/.android_secure");
+//		vt.runCommand("umount /mnt/secure/asec");
+//		vt.busybox("fuser -km /mnt/sdcard/external_sd");
+//		vt.runCommand("umount /mnt/sdcard/external_sd");
+//		vt.busybox("busybox fuser -km /mnt/sdcard");
+//		r = vt.runCommand("umount /mnt/sdcard");
+//		if (!r.success())
+//			return "Error! Could not unmount /mnt/sdcard : "+r.stderr;
 		
+		r = vt.runCommand("/dbdata/parted-static /dev/block/mmcblk0 print");
+		UpdateStatus(r.stdout);
+
 		return SUCCESS;
 	}
-
 
 	@Override
 	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
 		return lagFixOptions;
-	}
-
-	@Override
-	public String GetFeedbackLogEmailAddress() {
-		return "oneclicklagfix@gmail.com";
-	}
-	
-	@Override
-	public boolean CanForce() {
-		return true;
 	}
 
 }
