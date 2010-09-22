@@ -8,66 +8,58 @@ import android.content.Context;
 
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
-import com.rc.QuickFixLagFix.lib.ShellCommand;
-import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
 
-public class UnRootLagFix extends LagFix {
+public class TestUndoWrapper extends LagFix {
 
 	@Override
 	public String GetDisplayName() {
-		return "Un-Root Device";
+		return "TestUndoWrapper";
 	}
 
 	@Override
 	public String GetShortDescription() {
-		return "This will un-root your device.";
+		return "TestUndoWrapper";
 	}
 
 	@Override
 	public String GetLongDescription() {
-		return "Run this to un-root your device.";
+		return "TestUndoWrapper";
+	}
+
+	@Override
+	public String GetFeedbackLogEmailAddress() {
+		return "TestUndoWrapper";
 	}
 
 	@Override
 	public String IsEnabled(Context ApplicationContext) throws Exception, Error {
-		ShellCommand cmd = new ShellCommand();
-		CommandResult r = cmd.su.runWaitFor("id");
-		if (!r.success())
-			return "Your device is not rooted.";
-		
 		return ENABLED;
 	}
 
 	@Override
 	public String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error {
-		UpdateStatus("Removing root...");
-		vt.runCommand("rm /system/bin/su");
-		vt.runCommand("rm /system/xbin/su");
-		vt.runCommand("rm /system/xbin/busybox");
-		vt.runCommand("rm /system/app/Superuser.apk");
-		vt.FNF("sync");
-		vt.FNF("reboot");
+		vt.runCommand("mount -o remount,rw rootfs /");
+		vt.runCommand("mount -o remount,rw /dev/block/stl9 /system");
+		vt.busybox("mkdir /dbdata/logs");
+		vt.busybox("mkdir /dbdata/logs/gpsd");
+		vt.busybox("chmod 777 /system/bin");
+		vt.busybox("chmod 777 /system/bin/gpsd");
+		
+		for (String command : TestWrapper.ReplaceCommands) {
+			vt.busybox("mv /system/bin/"+command+".replace /system/bin/"+command);
+		}
+		
+		vt.busybox("mv /system/bin/playlogos1.replace /system/bin/playlogos1");
 		
 		return SUCCESS;
 	}
-
 
 	@Override
 	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
 		return lagFixOptions;
-	}
-
-	@Override
-	public String GetFeedbackLogEmailAddress() {
-		return "oneclicklagfix@gmail.com";
-	}
-	
-	@Override
-	public boolean CanForce() {
-		return true;
 	}
 
 }

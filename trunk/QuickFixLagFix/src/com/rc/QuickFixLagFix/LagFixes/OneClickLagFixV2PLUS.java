@@ -21,23 +21,21 @@ import com.rc.QuickFixLagFix.lib.Utils;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
-public class OneClickLagFixV1PLUS extends LagFix {
+public class OneClickLagFixV2PLUS extends LagFix {
 
-	final static String[] dataDirectories = new String[]{"data", "system", "dalvik-cache", "app", "app-private"};
-	
 	@Override
 	public String GetDisplayName() {
-		return "OneClickLagFix V1+";
+		return "OneClickLagFix V2+";
 	}
 
 	@Override
 	public String GetShortDescription() {
-		return "A variant of RyanZAOneClickLagFix 1.0 with extras.";
+		return "The 1.0 lagfix using bind mounts.";
 	}
 
 	@Override
 	public String GetLongDescription() {
-		return "This is a clone of the RyanZA One Click Lag Fix 1.0 found on XDA Developers. It is implemented using Java instead of an 'sh' script. It contains a lot of checks. It will also do a check of the EXT2 on each boot, as well as including the /app and /app-private folders. This lag fix should not affect your apps or data.";
+		return "This lagfix is similar to the 1.0 lagfix, in that it uses a loopback EXT2 mount on top of RFS to store the RFS data inside. The difference between V2 and V1 is that this lagfix will use a bind mount, while V1 uses symlinks. The bind mount allows for accurate space information in Android, and has slightly increased speed. \n\nALPHA QUALITY\n\n";
 	}
 
 	@Override
@@ -49,7 +47,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 
 		if (!EXT2ToolsLagFix.IsInstalled())
 			return "You must install EXT2Tools from the menu to use this lag fix.";
-		
+
 		StatFs statfs = new StatFs("/data/");
 		long bytecountfree = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
 		long bytecountused = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree;
@@ -99,7 +97,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 			Utils.KillAllRunningApps(ApplicationContext);
 
 			UpdateStatus("Initializing boot support");
-			Utils.InitializeBootSupport(R.raw.oclfv1plus, "oclfv1plus.sh", ApplicationContext, vt);
+			Utils.InitializeBootSupport(R.raw.oclfv2plus, "oclfv2plus.sh", ApplicationContext, vt);
 
 			UpdateStatus("Calculating sizes...");
 
@@ -112,117 +110,102 @@ public class OneClickLagFixV1PLUS extends LagFix {
 			final long maxsize = bytecountfree - 1024L * 1024L * 200;
 			long curval = minsize + progress * (maxsize - minsize) / 10000;
 
+			UpdateStatus("Mounting RFS /data onto /dbdata/rfsdata");
+			vt.runCommand("sync");
+			vt.runCommand("umount /dbdata/rfsdata");
+			vt.busybox("rm -rf /dbdata/rfsdata");
+			vt.busybox("mkdir /dbdata/rfsdata");
+			vt.busybox("rm -rf /dbdata/null");
+			vt.busybox("mkdir /dbdata/null");
+			VTCommandResult r = vt.runCommand("mount -t rfs -o nosuid,nodev,check=no,noatime,nodiratime /dev/block/mmcblk0p2 /dbdata/rfsdata");
+			if (!r.success())
+				return "Could not mount /dev/block/mmcblk0p2 onto /dbdata/rfsdata: " + r.stderr;
+
 			UpdateStatus("Creating " + Utils.FormatByte(curval) + " file to store data inside. This could take a long time...");
 			curval /= 1024L;
 			curval /= 1024L;
 
-			VTCommandResult r = vt.busybox("rm /data/linux.ex2");
+			vt.busybox("rm -rf /dbdata/rfsdata/ext2");
+			vt.busybox("mkdir /dbdata/rfsdata/ext2");
 			String err;
-			UpdateStatus("Running command: " + "dd if=/dev/zero of=/data/linux.ex2 bs=1M count=0 seek=" + curval);
-			r = vt.busybox("dd if=/dev/zero of=/data/linux.ex2 bs=1M count=0 seek=" + curval);
+			UpdateStatus("Running command: " + "dd if=/dev/zero of=/dbdata/rfsdata/ext2/linux.ex2 bs=1M count=0 seek=" + curval);
+			r = vt.busybox("dd if=/dev/zero of=/dbdata/rfsdata/ext2/linux.ex2 bs=1M count=0 seek=" + curval);
 			if (!r.success()) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
-				r = vt.busybox("rm /data/linux.ex2");
-				return "Could not create /data/linux.ex2 - " + err;
+				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
+				return "Could not create /dbdata/rfsdata/ext2/linux.ex2 - " + err;
 			}
 
 			UpdateStatus("Creating loopback device");
 			r = vt.busybox("mknod /dev/loop0 b 7 0");
 			UpdateStatus("Linking loopback to the file store");
-			r = vt.busybox("losetup /dev/loop0 /data/linux.ex2");
-			if (!r.success()) {
+			r = vt.busybox("losetup /dev/loop0 /dbdata/rfsdata/ext2/linux.ex2");
+			if (!r.success() && !r.stderr.trim().equalsIgnoreCase("losetup: /dev/loop0")) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
-				r = vt.busybox("rm /data/linux.ex2");
-				return "Could not link loopback device /dev/loop0 to /data/linux.ex2! " + err;
+				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
+				return "Could not link loopback device /dev/loop0 to /dbdata/rfsdata/ext2/linux.ex2! " + err;
 			}
 			UpdateStatus("Creating the EXT2 filesystem");
 			r = vt.busybox("mkfs.ext2 -b 4096 /dev/loop0");
-			vt.busybox("rm -rf /data/ext2data");
-			vt.busybox("mkdir /data/ext2data");
+			vt.busybox("rm -rf /dbdata/ext2data");
+			vt.busybox("mkdir /dbdata/ext2data");
 			UpdateStatus("Mounting Device");
-			r = vt.runCommand("mount -t ext2 -o noatime,nodiratime,errors=continue /dev/loop0 /data/ext2data");
+			r = vt.runCommand("mount -t ext2 -o noatime,nodiratime,errors=continue /dev/loop0 /dbdata/ext2data");
 			if (!r.success()) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
 				r = vt.busybox("losetup -d /dev/loop0");
-				r = vt.busybox("rm /data/linux.ex2");
+				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
 				return "Could not mount loopback device /dev/loop0! " + err;
 			}
 
-			for (String dir : dataDirectories) {
-				UpdateStatus("Copying over folder " + dir + " to EXT2");
-				r = vt.busybox("cp -rp /data/" + dir + " /data/ext2data/");
-				if (!r.success()) {
-					UpdateStatus("Hit an error, undoing lagfix!");
-					err = r.stderr;
-					r = vt.busybox("umount /data/ext2data");
-					r = vt.busybox("losetup -d /dev/loop0");
-					r = vt.busybox("rm /data/linux.ex2");
-					return "Could not copy over " + dir + ": " + err;
-				}
+			UpdateStatus("Override /data/linux.ex2 with a null mount, so it doesn't get copied across");
+			r = vt.busybox("mount -o bind /dbdata/null /data/ext2");
+			if (!r.success()) {
+				UpdateStatus("Hit an error, undoing lagfix!");
+				err = r.stderr;
+				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
+				return "Could not mount null mount! " + err;
 			}
-//			for (String dir : dataDirectories) {
-//				r = vt.busybox("rm -rf /data/" + dir + ".bak");
-//			}
-			for (String dir : dataDirectories) {
-				UpdateStatus("Renaming old " + dir + " folder to " + dir + ".bak");
-				r = vt.busybox("mv /data/" + dir + " /data/" + dir + ".bak");
-				if (!r.success()) {
-					UpdateStatus("Hit an error, undoing lagfix!");
-					err = r.stderr;
-					for (String dir2 : dataDirectories) {
-						UpdateStatus("Renaming " + dir2 + ".bak folder back to to " + dir2);
-						r = vt.busybox("mv /data/" + dir2 + ".bak /data/" + dir2);
-					}
-					r = vt.busybox("umount /data/ext2data");
-					r = vt.busybox("losetup -d /dev/loop0");
-					r = vt.busybox("rm /data/linux.ex2");
-					return "Could not rename folder " + dir + "! " + err;
-				}
+			UpdateStatus("Copying over /data to EXT2");
+			vt.runCommand("sync");
+			r = vt.busybox("cp -rp /data /dbdata/ext2data/");
+			if (!r.success()) {
+				UpdateStatus("Hit an error, undoing lagfix!");
+				err = r.stderr;
+				r = vt.busybox("umount /dbdata/ext2data");
+				r = vt.busybox("umount /dbdata/rfsdata");
+				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
+				return "Could not copy over /data to EXT2: " + err;
 			}
-			for (String dir : dataDirectories) {
-				UpdateStatus("Linking " + dir + " on EXT2 to /data/" + dir);
-				r = vt.busybox("ln -s /data/ext2data/" + dir + " /data/" + dir);
-				if (!r.success()) {
-					err = r.stderr;
-					UpdateStatus("Hit an error, undoing lagfix!");
-					for (String dir2 : dataDirectories) {
-						r = vt.busybox("rm /data/" + dir2);
-						UpdateStatus("Renaming " + dir2 + ".bak folder back to to " + dir2);
-						r = vt.busybox("mv /data/" + dir2 + ".bak /data/" + dir2);
-					}
-					r = vt.busybox("umount /data/ext2data");
-					r = vt.busybox("losetup -d /dev/loop0");
-					r = vt.busybox("rm /data/linux.ex2");
-					return "Could not create link for " + dir + "! " + err;
-				}
+
+			UpdateStatus("Bind mounting /dbdata/ext2data/data onto /data");
+			r = vt.runCommand("mount -o bind /dbdata/ext2data/data /data");
+			if (!r.success()) {
+				UpdateStatus("Hit an error, undoing lagfix!");
+				err = r.stderr;
+				r = vt.busybox("umount /dbdata/ext2data");
+				r = vt.busybox("umount /dbdata/rfsdata");
+				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
+				return "Could not copy over /data to EXT2: " + err;
 			}
 
 			UpdateStatus("Setting up boot support");
 			try {
-				Utils.SetupBootSupport("oclfv1plus.sh", vt);
+				Utils.SetupBootSupport("oclfv2plus.sh", vt);
 			} catch (Exception ex) {
-				UpdateStatus("Error while setting up boot support! Undoing lag fix.");
-				for (String dir2 : dataDirectories) {
-					r = vt.busybox("rm /data/" + dir2);
-					UpdateStatus("Renaming " + dir2 + ".bak folder back to to " + dir2);
-					r = vt.busybox("mv /data/" + dir2 + ".bak /data/" + dir2);
-				}
-				r = vt.busybox("umount /data/ext2data");
-				r = vt.busybox("losetup -d /dev/loop0");
-				r = vt.busybox("rm /data/linux.ex2");
 				return ex.getLocalizedMessage();
 			}
 
-//			UpdateStatus("Removing temporary backup files off RFS. It is possible to see apps FC at this point.");
-//			for (String dir : dataDirectories) {
-//				r = vt.busybox("rm -rf /data/" + dir + ".bak");
-//			}
-			UpdateStatus("System will reboot in 10 seconds, to ensure everything works properly.");
+			UpdateStatus("System will reboot in 5 seconds, to ensure everything works properly.");
 			vt.FNF("sync");
-			Thread.sleep(10000);
+			Thread.sleep(5000);
+			vt.FNF("sync");
 			vt.FNF("reboot");
 		} finally {
 			Utils.DisableFlightMode(ApplicationContext);

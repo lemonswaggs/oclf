@@ -7,17 +7,21 @@ import java.util.Map;
 import android.content.Context;
 import android.os.PowerManager;
 
-import com.rc.QuickFixLagFix.LagFixes.CaptivateJupterFix;
 import com.rc.QuickFixLagFix.LagFixes.ChangeSchedulerLagFix;
 import com.rc.QuickFixLagFix.LagFixes.CheckFreeSpaceLagFix;
+import com.rc.QuickFixLagFix.LagFixes.CleanLagFix;
 import com.rc.QuickFixLagFix.LagFixes.EXT2ToolsLagFix;
 import com.rc.QuickFixLagFix.LagFixes.InstallFontLagFix;
+import com.rc.QuickFixLagFix.LagFixes.MinFreeLagFix;
 import com.rc.QuickFixLagFix.LagFixes.OneClickLagFixV1PLUS;
+import com.rc.QuickFixLagFix.LagFixes.OneClickLagFixV2PLUS;
 import com.rc.QuickFixLagFix.LagFixes.RemoveEXT2ToolsLagFix;
 import com.rc.QuickFixLagFix.LagFixes.RestorePlaylogos1;
 import com.rc.QuickFixLagFix.LagFixes.RootLagFix;
 import com.rc.QuickFixLagFix.LagFixes.UnRootLagFix;
 import com.rc.QuickFixLagFix.LagFixes.UndoOneClickLagFixV1PLUS;
+import com.rc.QuickFixLagFix.LagFixes.UndoOneClickLagFixV2PLUS;
+import com.rc.QuickFixLagFix.LagFixes.WifiTimeoutLagFix;
 
 public class LagFixWorker {
 
@@ -25,18 +29,20 @@ public class LagFixWorker {
 	
 	static {
 		WorkerInstance.RegisterLagFix(new RootLagFix());
-		//WorkerInstance.RegisterLagFix(new UndoOneClickLagFixV1());
 		WorkerInstance.RegisterLagFix(new EXT2ToolsLagFix());
-		//WorkerInstance.RegisterLagFix(new OneClickLagFixV1_3());
-		WorkerInstance.RegisterLagFix(new CheckFreeSpaceLagFix());
-		WorkerInstance.RegisterLagFix(new OneClickLagFixV1PLUS());
-		WorkerInstance.RegisterLagFix(new UndoOneClickLagFixV1PLUS());
+		WorkerInstance.RegisterLagFix(new OneClickLagFixV2PLUS());
+		WorkerInstance.RegisterLagFix(new UndoOneClickLagFixV2PLUS());
 		WorkerInstance.RegisterLagFix(new UnRootLagFix());
-		WorkerInstance.RegisterLagFix(new CaptivateJupterFix());
+		WorkerInstance.RegisterLagFix(new MinFreeLagFix());
 		WorkerInstance.RegisterLagFix(new RestorePlaylogos1());
 		WorkerInstance.RegisterLagFix(new RemoveEXT2ToolsLagFix());
 		WorkerInstance.RegisterLagFix(new ChangeSchedulerLagFix());
 		WorkerInstance.RegisterLagFix(new InstallFontLagFix());
+		WorkerInstance.RegisterLagFix(new CleanLagFix());
+		WorkerInstance.RegisterLagFix(new WifiTimeoutLagFix());
+		WorkerInstance.RegisterLagFix(new CheckFreeSpaceLagFix());
+		WorkerInstance.RegisterLagFix(new OneClickLagFixV1PLUS());
+		WorkerInstance.RegisterLagFix(new UndoOneClickLagFixV1PLUS());
 		//WorkerInstance.RegisterLagFix(new TestLagFix());
 	}
 

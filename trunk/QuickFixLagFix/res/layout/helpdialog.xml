@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent">
+	<Button android:text="Dismiss" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:id="@+id/dismiss"
+		android:layout_centerHorizontal="true"
+		android:layout_alignParentBottom="true" />
+	<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="fill_parent" android:layout_height="fill_parent"
+		android:layout_above="@id/dismiss">
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:orientation="vertical">
+			<TextView
+				android:text="You can access this help screen at any time using the menu key, and selecting help."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView android:text="Known Supported Devices"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView android:text="International I9000, Captivate, Vibrant"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+			<TextView android:text="Recommended order to run options:"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView
+				android:text="You should first root your device. You can either use the included option, which will work on most 2.1 devices, or you can root using a different method. It does not matter as long as your device is rooted."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="When your device is rooted, you must run 'Install EXT2 Tools'. This will copy over libraries and utilities that the lagfix will use to check the filesystem."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="Now you can run the lagfix itself. Select 'OneClickLagFix V1+'. Leaving the slider in the middle should be fine for most users."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="Once the lagfix is installed, there are other options that can help you improve your devices speed. 'Alter minfree' works well, as it will help with ram usage on your Galaxy S."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+			<TextView android:text="Uninstalling The Lagfix"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView
+				android:text="To remove the lagfix, select the option 'Undo OneClickLagFix V1+'"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="This option should be used when you wish to remove the lagfix from your phone, or before upgrading your firmware, or using the format/clear data options available in Android."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+			<TextView android:text="Upgrading firmware"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView
+				android:text="When upgrading your devices firmware using an OTA update, or using Samsung Kies, you should first use the 'Undo OneClickLagFix V1+' option in order to ensure that your data is not lost during the update. You should not need to unroot, as the update will automatically remove root for you."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="When upgrading using Odin, no steps need to be taken as Odin will overwrite everything."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+			<TextView android:text="Broken Pipe Error"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView
+				android:text="This is a known issue, and will occasionally appear when using an option. It will do no harm, simply retry the option if you see this error. I'm trying to track down the cause."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+		</LinearLayout>
+	</ScrollView>
+</RelativeLayout>

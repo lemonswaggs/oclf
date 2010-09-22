@@ -45,7 +45,7 @@ public class LagFixSeekOption extends LagFixOption {
 		SeekBar seekbar = new SeekBar(ActivityContex);
 		TextView text = new TextView(ActivityContex);
 		
-		LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(180, RadioGroup.LayoutParams.WRAP_CONTENT);
+		LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(280, RadioGroup.LayoutParams.WRAP_CONTENT);
 		ll.addView(seekbar, layoutParams);
 		ll.addView(text, layoutParams);
 		
