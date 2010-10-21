@@ -44,6 +44,9 @@ public class WifiTimeoutLagFix extends LagFix {
 		CommandResult r = cmd.su.runWaitFor("id");
 		if (!r.success())
 			return "Root is required to run this fix.";
+		
+		if (!EXT2ToolsLagFix.IsInstalled())
+			return "You must install EXT2Tools from the menu to use this lag fix.";
 
 		return ENABLED;
 	}

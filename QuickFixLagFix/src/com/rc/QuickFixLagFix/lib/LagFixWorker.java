@@ -1,5 +1,6 @@
 package com.rc.QuickFixLagFix.lib;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ import com.rc.QuickFixLagFix.LagFixes.WifiTimeoutLagFix;
 public class LagFixWorker {
 
 	private static LagFixWorker WorkerInstance = new LagFixWorker();
-	
+
 	static {
 		WorkerInstance.RegisterLagFix(new RootLagFix());
 		WorkerInstance.RegisterLagFix(new EXT2ToolsLagFix());
@@ -43,7 +44,7 @@ public class LagFixWorker {
 		WorkerInstance.RegisterLagFix(new CheckFreeSpaceLagFix());
 		WorkerInstance.RegisterLagFix(new OneClickLagFixV1PLUS());
 		WorkerInstance.RegisterLagFix(new UndoOneClickLagFixV1PLUS());
-		//WorkerInstance.RegisterLagFix(new TestLagFix());
+		// WorkerInstance.RegisterLagFix(new TestLagFix());
 	}
 
 	public static LagFixWorker getBackgroundWorker() {
@@ -61,13 +62,13 @@ public class LagFixWorker {
 	public List<LagFix> getLagFixList() {
 		return LagFixList;
 	}
-	
+
 	public List<LagFix> getEnabledList(int EnabledStatus) {
 		List<LagFix> list = new ArrayList<LagFix>();
 		for (LagFix fix : LagFixList) {
 			if (fix.getEnabledStatus() == EnabledStatus) {
 				list.add(fix);
-			}				
+			}
 		}
 		return list;
 	}
@@ -80,11 +81,11 @@ public class LagFixWorker {
 		if (CurrentLagFixRunnable != null)
 			throw new IllegalStateException(CurrentLagFixRunnable.CurrentLagFix.GetDisplayName() + " is already running!");
 		CurrentLagFixRunnable = new LagFixRunnable(lagFix, optionsMap, ApplicationContext);
-		CurrentLagFixRunnable.start();		
+		CurrentLagFixRunnable.start();
 	}
-	
+
 	public synchronized void doLagFixChecks(Context ApplicationContext) throws IllegalStateException {
-		if (System.currentTimeMillis()-LastLagFixCheckTime<120000)
+		if (System.currentTimeMillis() - LastLagFixCheckTime < 120000)
 			return;
 		if (CurrentLagFixChecker != null)
 			return;
@@ -114,9 +115,9 @@ public class LagFixWorker {
 
 		@Override
 		public void run() {
-		    PowerManager pm = (PowerManager) ApplicationContext.getSystemService(Context.POWER_SERVICE);
-		    PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "OCLF");
-		    wl.acquire();
+			PowerManager pm = (PowerManager) ApplicationContext.getSystemService(Context.POWER_SERVICE);
+			PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "OCLF");
+			wl.acquire();
 
 			String result = null;
 			try {
@@ -124,12 +125,14 @@ public class LagFixWorker {
 				if (!CurrentLagFix.CanForce()) {
 					result = CurrentLagFix.IsEnabled(ApplicationContext);
 					if (!result.equals(LagFix.ENABLED))
-						throw new Exception("Lagfix failed test: "+result);
+						throw new Exception("Lagfix failed test: " + result);
 				}
 				VirtualTerminal vt = null;
 				try {
 					vt = new VirtualTerminal();
-				} catch (Exception ex) {}
+					vt.busybox("mount -o remount,rw /system");
+				} catch (Exception ex) {
+				}
 				try {
 					result = CurrentLagFix.Run(optionsMap, ApplicationContext, vt);
 				} catch (BrokenPipeException bpe) {
@@ -138,12 +141,15 @@ public class LagFixWorker {
 					Thread.sleep(2500);
 					try {
 						vt = new VirtualTerminal();
-					} catch (Exception ex2) {}
+					} catch (Exception ex2) {
+					}
 					result = CurrentLagFix.Run(optionsMap, ApplicationContext, vt);
 				}
 			} catch (Exception ex) {
+				ex.printStackTrace();
 				result = ex.getLocalizedMessage();
 			} catch (Error ex) {
+				ex.printStackTrace();
 				result = ex.getLocalizedMessage();
 			} finally {
 				LastLagFixCheckTime = 0;
@@ -152,13 +158,16 @@ public class LagFixWorker {
 					result = CurrentLagFix.GetDisplayName() + " finished successfully.";
 					success = true;
 				} else {
-					result = CurrentLagFix.GetDisplayName() + " failed with error: "+result;
+					result = CurrentLagFix.GetDisplayName() + " failed with error: " + result;
 					success = false;
 				}
-				StatusListener statusListener = CurrentLagFix.statusListenerWR.get();
+				WeakReference<StatusListener> statusListenerWR = CurrentLagFix.statusListenerWR;
+				StatusListener statusListener = null;
+				if (statusListenerWR != null)
+					statusListener = statusListenerWR.get();
 				CurrentLagFix.UpdateStatus(result);
 				if (statusListener != null) {
-					statusListener.LagFixFinishedWithMessage(CurrentLagFix, result, success);					
+					statusListener.LagFixFinishedWithMessage(CurrentLagFix, result, success);
 				}
 				CurrentLagFixRunnable = null;
 				LastLagFixResult = result;
@@ -194,15 +203,15 @@ class LagFixChecker extends Thread {
 			lagFix.EnabledStatus = LagFix.LAGFIX_UNKNOWN;
 			lagFix.DisabledReason = LagFix.INITIALIZING;
 		}
-		for (int i=0;i<workerInstance.LagFixList.size();i++) {
+		for (int i = 0; i < workerInstance.LagFixList.size(); i++) {
 			LagFix lagFix = workerInstance.LagFixList.get(i);
 			StatusListener listener = lagFix.statusListenerWR.get();
 			if (listener != null)
-				listener.Update(i*10000/workerInstance.LagFixList.size());			
-			lagFix.doEnabledTest(ApplicationContext);			
+				listener.Update(i * 10000 / workerInstance.LagFixList.size());
+			lagFix.doEnabledTest(ApplicationContext);
 			if (listener != null)
-				listener.Update((i+1)*10000/workerInstance.LagFixList.size());
-		}		
+				listener.Update((i + 1) * 10000 / workerInstance.LagFixList.size());
+		}
 
 		workerInstance.CurrentLagFixChecker = null;
 		workerInstance.LagFixCheckRunning = false;

@@ -21,7 +21,7 @@ import com.rc.QuickFixLagFix.lib.VirtualTerminal;
 public class UndoOneClickLagFixV2PLUS extends LagFix {
 
 	final static String[] dataDirectories = new String[]{"data", "system", "dalvik-cache", "app", "app-private"};
-	
+
 	@Override
 	public String GetDisplayName() {
 		return "Undo OneClickLagFix V2+";
@@ -50,7 +50,7 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 		if (Utils.GetBatteryLevel(ApplicationContext) < 40) {
 			return "You need at least 40% battery charge to use this fix.";
 		}
-		
+
 		RandomAccessFile rfile = null;
 		try {
 			rfile = new RandomAccessFile("/system/bin/playlogos1", "r");
@@ -71,14 +71,16 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 		} finally {
 			Utils.CloseFile(rfile);
 		}
-		
+
 		try {
 			if (Utils.GetMD5Hash("/system/bin/playlogos1").equalsIgnoreCase(MD5Hashes.playlogos1_eclair))
+				return "You do not have a lagfix installed. playlogos1 matches original signature.";
+			if (Utils.GetMD5Hash("/system/bin/playlogos1").equalsIgnoreCase(MD5Hashes.playlogos1_froyo))
 				return "You do not have a lagfix installed. playlogos1 matches original signature.";
 		} catch (FileNotFoundException ex) {
 			return "You do not have a /system/bin/playlogos1 file!";
 		}
-		
+
 		try {
 			rfile = new RandomAccessFile("/system/bin/playlogosnow", "r");
 			if (rfile.getChannel().size() < 5000)
@@ -88,10 +90,10 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 		} finally {
 			Utils.CloseFile(rfile);
 		}
-		
+
 		try {
 			String Hash = Utils.GetMD5Hash("/system/bin/userinit.sh");
-			if (!Hash.equalsIgnoreCase(MD5Hashes.oclfv2_plus)) 
+			if (!Hash.equalsIgnoreCase(MD5Hashes.oclfv2_plus) && !Hash.equalsIgnoreCase(MD5Hashes.oclfv21_plus) && !Hash.equalsIgnoreCase(MD5Hashes.oclfv22_plus))
 				return "You do not have OCLF V2 PLUS installed. userinit.sh does not match signature.";
 		} catch (FileNotFoundException ex) {
 			return "You do not have OCLF V2 PLUS installed. userinit.sh not found.";
@@ -106,12 +108,13 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 		Utils.EnableFlightMode(ApplicationContext);
 		try {
 			Utils.KillAllRunningApps(ApplicationContext);
-			
+
 			UpdateStatus("Removing old backups. This could take some time.");
 			for (String dir : dataDirectories) {
 				vt.busybox("rm -rf /dbdata/rfsdata/" + dir);
+				vt.busybox("rm -rf /dbdata/rfsdata/" + dir + ".old");
 			}
-			
+
 			UpdateStatus("Checking to see if enough space is available on RFS...");
 			StatFs statfs = new StatFs("/dbdata/rfsdata/");
 			long bytecountfree_rfs = (long) statfs.getAvailableBlocks() * (long) statfs.getBlockSize();
@@ -120,19 +123,23 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 			long bytecountused_ext2 = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree_ext2;
 
 			if (bytecountused_ext2 > bytecountfree_rfs)
-				return "You have only "+Utils.FormatByte(bytecountfree_rfs)+" free on RFS, but "+Utils.FormatByte(bytecountused_ext2)+" used on EXT2. You must free up some space.";
+				return "You have only " + Utils.FormatByte(bytecountfree_rfs) + " free on RFS, but " + Utils.FormatByte(bytecountused_ext2)
+						+ " used on EXT2. You must free up some space.";
 
 			UpdateStatus("Copying data back from EXT2 to RFS. This could take a long time...");
 			vt.runCommand("sync");
 			vt.busybox("cp -rp /data/* /dbdata/rfsdata/");
-			//VTCommandResult r = vt.busybox("cp -rp /data/* /dbdata/rfsdata/");
-			//if (!r.success())
-			//	return "Could not copy your data back to RFS. Please try this again after stopping or removing all background apps."+r.stderr;
-			// This check is removed, since we'r going to get errors anyway 'same file' for /data/wifi, etc. Need a workaround maybe?
-			
+			// VTCommandResult r =
+			// vt.busybox("cp -rp /data/* /dbdata/rfsdata/");
+			// if (!r.success())
+			// return
+			// "Could not copy your data back to RFS. Please try this again after stopping or removing all background apps."+r.stderr;
+			// This check is removed, since we'r going to get errors anyway
+			// 'same file' for /data/wifi, etc. Need a workaround maybe?
+
 			UpdateStatus("Removing boot support");
 			Utils.RemoveBootSupport(vt);
-			
+
 			UpdateStatus("Removing old datafile. If the system crashes at this point, just restart your device.");
 			vt.busybox("rm -rf /dbdata/rfsdata/ext2");
 

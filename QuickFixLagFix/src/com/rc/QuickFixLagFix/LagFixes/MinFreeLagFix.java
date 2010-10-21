@@ -11,6 +11,7 @@ import com.rc.QuickFixLagFix.Activities.QuickFixLagFix;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixCheckOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixChoiceOption;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
+import com.rc.QuickFixLagFix.LagFixOptions.LagFixTextOption;
 import com.rc.QuickFixLagFix.lib.LagFix;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
@@ -39,7 +40,7 @@ public class MinFreeLagFix extends LagFix {
 
 	@Override
 	public String GetLongDescription() {
-		return "This option allows you to change Android's default task-killers settings. The defaults work quite poorly on the SGS, and so this will allow you to change them. This does the equivalent of other apps on the market such as 'Autokiller'.\n\nI personally use 'strict' setting, and find it to work well.\n\nPresets are the same as Autokiller:\nModerate: 30,35,40\nOptimum: 40,50,60\nStrict: 60,70,80\nAggressive:82,90,98\n(Hidden app, Content provider, Empty app)";
+		return "This option allows you to change Android's default task-killers settings. The defaults work quite poorly on the SGS, and so this will allow you to change them. This does the equivalent of other apps on the market such as 'Autokiller'.\n\nI personally use 'strict' setting, and find it to work well.\n\nPresets are the same as Autokiller:\nModerate: 30,35,40\nOptimum: 40,50,60\nStrict: 60,70,80\nAggressive:82,90,98\n(Hidden app, Content provider, Empty app)\n\n\n";
 	}
 
 	@Override
@@ -87,8 +88,23 @@ public class MinFreeLagFix extends LagFix {
 	protected List<LagFixOption> GetOptions() throws Exception, Error {
 		ArrayList<LagFixOption> lagFixOptions = new ArrayList<LagFixOption>();
 
+		VirtualTerminal vt = new VirtualTerminal();
+		VTCommandResult r = vt.runCommand("cat /sys/module/lowmemorykiller/parameters/minfree");
+		if (r.success()) {
+			String[] output = r.stdout.split("\n");
+			String preset = "This setting does not match one of the presets.";
+			for (int i=0;i<Presets.length;i++) {
+				if (output[0].equals(PresetValues[i])) {
+					preset = "This setting matches preset "+Presets[i]+".";
+				}
+			}
+			lagFixOptions.add(new LagFixTextOption("descr", "Current Settings", preset, output[0]));
+		} else {
+			lagFixOptions.add(new LagFixTextOption("descr", r.stderr, r.stderr, r.stderr));
+		}
+		
 		lagFixOptions.add(new LagFixChoiceOption("preset", "Autokiller Preset", "Strict is recommended", Presets));
-		lagFixOptions.add(new LagFixCheckOption("autoset", "Set On Boot", "If checked, this option will be enabled on every reboot", true));
+		lagFixOptions.add(new LagFixCheckOption("autoset", "Set On Boot", "If checked, this option will be enabled on every reboot. If unchecked, on your next reboot the setting will be reset to default.", true));
 		
 		return lagFixOptions;
 	}

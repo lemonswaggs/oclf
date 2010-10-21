@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent">
+	<Button android:text="Dismiss" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:id="@+id/dismiss"
+		android:layout_centerHorizontal="true"
+		android:layout_alignParentBottom="true" />
+	<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="fill_parent" android:layout_height="fill_parent"
+		android:layout_above="@id/dismiss">
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:orientation="vertical">
+			<TextView
+				android:text="This feature is still in ALPHA testing, and may contain bugs!"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView android:text="Known Supported Devices"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView android:text="International I9000, Captivate, Vibrant"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView android:text="Features" android:layout_width="wrap_content"
+				android:layout_height="wrap_content" android:textStyle="bold" />
+			<TextView
+				android:text="This version will determine if you are running an EXT4 partition. If you are, it will create the uninstall-lagfix file and reboot your device to remove the EXT4 partition. When it reboots, you can re-do whichever option you were using before hand and it should completely successfully!"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="New versions of kernels can show up inside the app without the app itself being updated, whenever the hosted manifest is updated. I'll try keep it updated, but if anybody wants to take over the kernel updates/uploads, give me a shout!"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="This feature will flash your device's kernel, and full precautions should be taken before using!"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView
+				android:text="Precautions include knowing how to fix your device with Odin if something goes wrong in your newly flashed kernel, fully reading the documentation for any kernel you do flash, and not using Kies or OTA updates until you flash back to your original kernel using the included function. Thanks!"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+		</LinearLayout>
+	</ScrollView>
+</RelativeLayout>

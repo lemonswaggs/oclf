@@ -1,10 +1,17 @@
 package com.rc.QuickFixLagFix.lib;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
+import java.util.Date;
 import java.util.List;
 
 import android.app.ActivityManager;
@@ -15,6 +22,7 @@ import android.content.IntentFilter;
 import android.provider.Settings;
 
 import com.rc.QuickFixLagFix.R;
+import com.rc.QuickFixLagFix.lib.LagFix.LogRow;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
 public class Utils {
@@ -39,7 +47,7 @@ public class Utils {
 		ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
 		List<RunningAppProcessInfo> runningapps = am.getRunningAppProcesses();
 		for (RunningAppProcessInfo app : runningapps) {
-			if (app.processName.equals("system") || app.processName.equals("com.rc.QuickFixLagFix"))
+			if (app.processName.equals("system") || app.processName.equals("com.rc.QuickFixLagFix") || app.processName.equals("com.rc.QuickFixLagFixDonate"))
 				continue;
 			am.restartPackage(app.processName);
 		}
@@ -82,14 +90,15 @@ public class Utils {
 		String FromPath = ApplicationContext.getFilesDir() + "/" + filename;
 		return vt.runCommand("dd if=" + FromPath + " of=" + ToPath);
 	}
-	
+
 	public static void CopyIncludedFiletoPath(int resourceid, String ToPath, Context ApplicationContext) throws Exception {
-//		ShellCommand sh = new ShellCommand();
-//		SaveIncludedFileIntoFilesFolder(resourceid, filename, ApplicationContext);
-//		String FromPath = ApplicationContext.getFilesDir() + "/" + filename;
-//		sh.sh.runWaitFor("rm "+ToPath);
-//		return sh.sh.runWaitFor("dd if=" + FromPath + " of=" + ToPath);
-		
+		// ShellCommand sh = new ShellCommand();
+		// SaveIncludedFileIntoFilesFolder(resourceid, filename,
+		// ApplicationContext);
+		// String FromPath = ApplicationContext.getFilesDir() + "/" + filename;
+		// sh.sh.runWaitFor("rm "+ToPath);
+		// return sh.sh.runWaitFor("dd if=" + FromPath + " of=" + ToPath);
+
 		InputStream is = ApplicationContext.getResources().openRawResource(resourceid);
 		FileOutputStream fos = new FileOutputStream(ToPath);
 		byte[] bytebuf = new byte[1024];
@@ -102,7 +111,7 @@ public class Utils {
 		fos.flush();
 		fos.close();
 	}
-	
+
 	public static void SetupBootSupport(String filename, VirtualTerminal vt) throws Exception {
 		VTCommandResult r = vt.busybox("mv /system/bin/playlogos1 /system/bin/playlogosnow");
 		if (!r.success()) {
@@ -113,7 +122,7 @@ public class Utils {
 			vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
 			throw new Exception("Could not copy included playlogos1 script to /system/bin/playlogos1 - " + r.stderr);
 		}
-		r = vt.busybox("cp /data/oclf/bootsupport/"+filename+" /system/bin/userinit.sh");
+		r = vt.busybox("cp /data/oclf/bootsupport/" + filename + " /system/bin/userinit.sh");
 		if (!r.success()) {
 			vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
 			throw new Exception("Could not copy included " + filename + " script to /system/bin/userinit.sh - " + r.stderr);
@@ -140,9 +149,9 @@ public class Utils {
 		if (!r.success()) {
 			throw new Exception("Could not copy included playlogos1 script to /data/oclf/bootsupport/playlogos11 - " + r.stderr);
 		}
-		r = CopyIncludedFiletoPath(resourceid, filename, "/data/oclf/bootsupport/"+filename, ApplicationContext, vt);
+		r = CopyIncludedFiletoPath(resourceid, filename, "/data/oclf/bootsupport/" + filename, ApplicationContext, vt);
 		if (!r.success()) {
-			throw new Exception("Could not copy included " + filename + " script to /data/oclf/bootsupport/"+filename+" - " + r.stderr);
+			throw new Exception("Could not copy included " + filename + " script to /data/oclf/bootsupport/" + filename + " - " + r.stderr);
 		}
 	}
 
@@ -152,7 +161,16 @@ public class Utils {
 	}
 
 	public static String FormatByte(long bytes) {
-		return Long.toString(bytes / 1024L / 1024L) + "MB";
+		if (bytes < 1024L)
+			return Long.toString(bytes) + " bytes";
+		if (bytes < 1024L*1024L)
+			return Long.toString(bytes / 1024L) + " KB";
+		if (bytes < 10L*1024L*1024L) {
+			String MB = Long.toString(bytes / 1024L / 1024L);
+			String Frac = "."+((((bytes / 1024L) % 1024L)*100L)/1024L);
+			return MB+Frac+" MB";
+		}
+		return Long.toString(bytes / 1024L / 1024L) + " MB";
 	}
 
 	static final String HEXES = "0123456789ABCDEF";
@@ -183,15 +201,86 @@ public class Utils {
 
 		return getHex(md.digest());
 	}
-	
+
 	public static long getDirectorySize(String path, VirtualTerminal vt) throws Exception {
-		VTCommandResult r = vt.busybox("du -sx "+path+" | awk '{print $1;}'");
+		VTCommandResult r = vt.busybox("du -sx " + path + " | awk '{print $1;}'");
 		if (!r.success())
-			throw new Exception("Could not get size of "+path+": "+r.stderr);
-		
+			throw new Exception("Could not get size of " + path + ": " + r.stderr);
+
 		String kbSizeStr = r.stdout.replaceAll("\n:RET=0", "").trim();
 		long kbSize = Long.parseLong(kbSizeStr);
-		return kbSize*1024L;
+		return kbSize * 1024L;
+	}
+
+	public static InputStream getHttpStream(String urlString) throws IOException {
+		InputStream in = null;
+		int response = -1;
+
+		URL url = new URL(urlString);
+		URLConnection conn = url.openConnection();
+
+		if (!(conn instanceof HttpURLConnection))
+			throw new IOException("Not an HTTP connection");
+
+		try {
+			HttpURLConnection httpConn = (HttpURLConnection) conn;
+			httpConn.setAllowUserInteraction(false);
+			httpConn.setInstanceFollowRedirects(true);
+			httpConn.setRequestMethod("GET");
+			httpConn.connect();
+
+			response = httpConn.getResponseCode();
+
+			if (response == HttpURLConnection.HTTP_OK) {
+				in = httpConn.getInputStream();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IOException("Error connecting");
+		} // end try-catch
+
+		return in;
+	}
+
+	public static void SaveWebFileToPath(String url, String ToPath, Context ApplicationContext, LagFix lf) throws Exception {
+		LogRow lr = lf.UpdateStatus("Download progress: Initializing");
+		InputStream is = getHttpStream(url);
+		FileOutputStream fos = new FileOutputStream(ToPath);
+		byte[] bytebuf = new byte[8092];
+		long totalread = 0;
+		int read;
+		while ((read = is.read(bytebuf)) >= 0) {
+			fos.write(bytebuf, 0, read);
+			totalread += read;
+			lr.LogMessage = "Download progress: " + FormatByte(totalread);
+			lr.LogTime = new Date();
+			try {
+				lf.statusListenerWR.get().NofifyChanged();
+			} catch (Exception ex) {
+			}
+		}
+		is.close();
+		fos.getChannel().force(true);
+		fos.flush();
+		fos.close();
+		
+		lr.LogMessage = "Download complete";
+		lr.LogTime = new Date();
+		try {
+			lf.statusListenerWR.get().NofifyChanged();
+		} catch (Exception ex) {
+		}
+	}
+
+	public static String readInputStreamAsString(InputStream in) throws IOException {
+		BufferedInputStream bis = new BufferedInputStream(in);
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		byte[] buffer = new byte[8092];
+		int read;
+		while ((read = bis.read(buffer)) >= 0) {
+			buf.write(buffer, 0, read);
+		}
+		return buf.toString();
 	}
 
 }

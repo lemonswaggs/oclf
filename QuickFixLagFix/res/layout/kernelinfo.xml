@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	android:layout_above="@id/dismiss">
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="wrap_content" android:layout_height="wrap_content"
+		android:orientation="vertical" android:padding="15dp">
+		<TextView android:text="Name:" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:textStyle="bold" />
+		<TextView android:id="@+id/name" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+
+		<TextView android:text="Description:" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" android:textStyle="bold" />
+		<TextView android:id="@+id/description" android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+
+		<TextView android:text="Kernel Version:"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:textStyle="bold" />
+		<TextView android:id="@+id/kernelversion"
+			android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+		<Button android:id="@+id/weburl" android:text="Visit Website"
+			android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+		<Button android:id="@+id/installkernel" android:text="Install Kernel"
+			android:layout_width="wrap_content" android:layout_height="wrap_content" />
+	</LinearLayout>
+</ScrollView>

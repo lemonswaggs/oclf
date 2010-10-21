@@ -9,9 +9,15 @@ import android.util.Log;
 import com.rc.QuickFixLagFix.LagFixes.ChangeSchedulerLagFix;
 import com.rc.QuickFixLagFix.LagFixes.MinFreeLagFix;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
+import com.rc.QuickFixLagFix.lib.VirtualTerminal;
 
 public class BootTimeActivity extends BroadcastReceiver {
 
+	void SetTweaks(String SchedType) throws Exception {
+		VirtualTerminal vt = new VirtualTerminal();
+		ChangeSchedulerLagFix.DoTweaks(vt, SchedType, null);
+	}
+	
 	void SetScheduler(String SchedType) throws Exception {
 		ShellCommand sc = new ShellCommand();
 		for (String blockdev : ChangeSchedulerLagFix.BlockDevices) {
@@ -39,6 +45,10 @@ public class BootTimeActivity extends BroadcastReceiver {
 			if (SchedType != null) {
 				try {
 					SetScheduler(SchedType);
+					boolean Tweaks = settings.getBoolean("Tweaks", false);
+					if (Tweaks) {
+						SetTweaks(SchedType);
+					}
 				} catch (Exception ex) {
 					ex.printStackTrace();
 				}

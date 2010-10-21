@@ -19,7 +19,7 @@ public abstract class LagFix {
 	public final static String INITIALIZING = "LagFix still initializing";
 	public final static String SUCCESS = "S";
 	public final static String ENABLED = "E";
-	String Status = "UNKNOWN";
+	LogRow Status = new LogRow("UNKNOWN");
 	List<LogRow> statusLog = new ArrayList<LogRow>();
 	public WeakReference<StatusListener> statusListenerWR;
 	
@@ -38,7 +38,7 @@ public abstract class LagFix {
 		return false;
 	}
 	
-	public String GetStatus() {
+	public LogRow GetStatus() {
 		return Status;
 	}
 	
@@ -46,14 +46,16 @@ public abstract class LagFix {
 		return statusLog;
 	};
 	
-	public final void UpdateStatus(String Status) {
+	public final LogRow UpdateStatus(String Status) {
+		LogRow lr = new LogRow(Status);
 		Log.i("OCLF", Status);
-		this.Status = Status;
-		statusLog.add(new LogRow(Status));
-		StatusListener statusListener = statusListenerWR.get();
+		this.Status = lr;
+		statusLog.add(lr);
+		StatusListener statusListener = statusListenerWR == null ? null : statusListenerWR.get();
 		if (statusListener != null) {
-			statusListener.UpdateStatusForLagFix(this, Status);
+			statusListener.UpdateStatusForLagFix(this, lr);
 		}
+		return lr;
 	}
 	
 	public final void SetStatusUpdateListener(StatusListener listener) {

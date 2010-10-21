@@ -23,9 +23,11 @@ import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
 public class OneClickLagFixV2PLUS extends LagFix {
 
+	final static String[] dataDirectories = new String[]{"data", "system", "dalvik-cache", "app", "app-private"};
+	
 	@Override
 	public String GetDisplayName() {
-		return "OneClickLagFix V2+";
+		return "OneClickLagFix V2.2+";
 	}
 
 	@Override
@@ -35,7 +37,7 @@ public class OneClickLagFixV2PLUS extends LagFix {
 
 	@Override
 	public String GetLongDescription() {
-		return "This lagfix is similar to the 1.0 lagfix, in that it uses a loopback EXT2 mount on top of RFS to store the RFS data inside. The difference between V2 and V1 is that this lagfix will use a bind mount, while V1 uses symlinks. The bind mount allows for accurate space information in Android, and has slightly increased speed. \n\nALPHA QUALITY\n\n";
+		return "This lagfix is similar to the 1.0 lagfix, in that it uses a loopback EXT2 mount on top of RFS to store the RFS data inside. The difference between V2 and V1 is that this lagfix will use a bind mount, while V1 uses symlinks. The bind mount allows for accurate space information in Android, and has slightly increased speed. \n\nThe difference between 2.1 and 2.0 is a technique used to ensure that the device does not boot until the EXT2 checks are done.\n\nV2.2 fixes a vibration issue with certain firmwares, as well as the timezone issue.\n\nThe slider controls how big the EXT2 loopback partition will be. The bigger it is, the more space you will have available after the lagfix is installed. The problem with putting it all the way to the right is that when uninstalling, you may have to delete apps to get enough free space to copy them back to RFS. So the default is around 800-1200mb which generally works well for most people.\n\n";
 	}
 
 	@Override
@@ -97,7 +99,7 @@ public class OneClickLagFixV2PLUS extends LagFix {
 			Utils.KillAllRunningApps(ApplicationContext);
 
 			UpdateStatus("Initializing boot support");
-			Utils.InitializeBootSupport(R.raw.oclfv2plus, "oclfv2plus.sh", ApplicationContext, vt);
+			Utils.InitializeBootSupport(R.raw.oclfv22plus, "oclfv2plus.sh", ApplicationContext, vt);
 
 			UpdateStatus("Calculating sizes...");
 
@@ -200,6 +202,12 @@ public class OneClickLagFixV2PLUS extends LagFix {
 				Utils.SetupBootSupport("oclfv2plus.sh", vt);
 			} catch (Exception ex) {
 				return ex.getLocalizedMessage();
+			}
+			
+			UpdateStatus("Creating stump files to prevent the phone from booting until EXT2 checks are complete");
+			for (String dir : dataDirectories) {
+				vt.busybox("mv /dbdata/rfsdata/"+dir+" /dbdata/rfsdata/"+dir+".old");
+				vt.runCommand("echo \"stump\" > /dbdata/rfsdata/"+dir);
 			}
 
 			UpdateStatus("System will reboot in 5 seconds, to ensure everything works properly.");

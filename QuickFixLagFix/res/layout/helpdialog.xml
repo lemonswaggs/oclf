@@ -17,7 +17,21 @@
 			<TextView android:text="Known Supported Devices"
 				android:layout_width="wrap_content" android:layout_height="wrap_content"
 				android:textStyle="bold" />
-			<TextView android:text="International I9000, Captivate, Vibrant"
+			<TextView
+				android:text="International I9000, Captivate, Vibrant, (Fascinate with V1+ Lagfix Only)"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+			<TextView android:text="2.2.4 Changelog"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView android:text="- Fix for menu-help button opening kernels page"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView android:text="- Minfree now shows current settings"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView android:text="- Set scheduler now shows current settings"
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
+				android:text="- Set scheduler now has an option to apply tweaks from hardcore on XDA forums"
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 
 			<TextView android:text="Recommended order to run options:"
@@ -27,20 +41,23 @@
 				android:text="You should first root your device. You can either use the included option, which will work on most 2.1 devices, or you can root using a different method. It does not matter as long as your device is rooted."
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 			<TextView
+				android:text="Please note that this app can not root 2.2 devices, as these devices require a PC to root. The lagfix will work on 2.2 devices though."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView
 				android:text="When your device is rooted, you must run 'Install EXT2 Tools'. This will copy over libraries and utilities that the lagfix will use to check the filesystem."
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 			<TextView
-				android:text="Now you can run the lagfix itself. Select 'OneClickLagFix V1+'. Leaving the slider in the middle should be fine for most users."
+				android:text="Now you can run the lagfix itself. Select 'OneClickLagFix V1+' or 'OneClickLagFix V2+'. V2+ shows accurate remaining space in Android. Leaving the slider in the middle should be fine for most users."
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 			<TextView
-				android:text="Once the lagfix is installed, there are other options that can help you improve your devices speed. 'Alter minfree' works well, as it will help with ram usage on your Galaxy S."
+				android:text="Once the lagfix is installed, there are other options that can help you improve your devices speed. 'Alter minfree' works well, as it will help with ram usage on your Galaxy S. Change scheduler has an option to apply tweaks as well."
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 
 			<TextView android:text="Uninstalling The Lagfix"
 				android:layout_width="wrap_content" android:layout_height="wrap_content"
 				android:textStyle="bold" />
 			<TextView
-				android:text="To remove the lagfix, select the option 'Undo OneClickLagFix V1+'"
+				android:text="To remove the lagfix, select the option 'Undo OneClickLagFix V1+' or 'Undo OneClickLagFix V2+'"
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 			<TextView
 				android:text="This option should be used when you wish to remove the lagfix from your phone, or before upgrading your firmware, or using the format/clear data options available in Android."
@@ -61,6 +78,12 @@
 				android:textStyle="bold" />
 			<TextView
 				android:text="This is a known issue, and will occasionally appear when using an option. It will do no harm, simply retry the option if you see this error. I'm trying to track down the cause."
+				android:layout_width="wrap_content" android:layout_height="wrap_content" />
+			<TextView android:text="Loopback error on Froyo when installing the lagfix"
+				android:layout_width="wrap_content" android:layout_height="wrap_content"
+				android:textStyle="bold" />
+			<TextView
+				android:text="This is a known issue, and will appear when installing the lagfix on Froyo with applications on the SD card. Go into Settings,Applications,Manage Applications and then the 'On SD card' tab. Move all applications back to device memory. The lagfix will then work."
 				android:layout_width="wrap_content" android:layout_height="wrap_content" />
 		</LinearLayout>
 	</ScrollView>

@@ -120,6 +120,8 @@ public class EXT2ToolsLagFix extends LagFix {
 				return "Could not set permissions for "+binary+": "+r.stderr;
 		}
 		
+		vt.busybox("mount -o remount,rw /system");
+		
 		UpdateStatus("Saving libraries to disk...");
 
 		for (int i=0;i<libraries.length;i++) {
