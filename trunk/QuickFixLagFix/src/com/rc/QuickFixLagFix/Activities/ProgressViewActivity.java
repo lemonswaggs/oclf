@@ -30,24 +30,30 @@ public class ProgressViewActivity extends ListActivity implements StatusListener
 
 	static final int DIALOG_REQUEST_SENDLOG = 0;
 	static final int DIALOG_REQUEST_SENDLOG_DETAILS = 1;
-	
+
 	LagFix lagFix;
-	
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.progress);
 		
-		int lfIndex = getIntent().getIntExtra("LagFixIndex", 0);
-		lagFix = LagFixWorker.getBackgroundWorker().getLagFix(lfIndex);
-		
+		boolean IsKernel = getIntent().getBooleanExtra("IsKernel", false);
+		if (IsKernel) {
+			lagFix = KernelListActivity.currentLagFix;
+		} else {
+			int lfIndex = getIntent().getIntExtra("LagFixIndex", 0);
+			lagFix = LagFixWorker.getBackgroundWorker().getLagFix(lfIndex);
+		}
+
 		setListAdapter(new LogListAdapter(this, lagFix.getStatusLog()));
 	}
-	
+
 	@Override
 	protected void onResume() {
 		super.onResume();
 		LagFixWorker.getBackgroundWorker().SetStatusListener(this);
+		lagFix.SetStatusUpdateListener(this);
 
 		TextView currentStatus = (TextView) findViewById(R.id.status);
 		TextView lastResult = (TextView) findViewById(R.id.lastresult);
@@ -55,7 +61,7 @@ public class ProgressViewActivity extends ListActivity implements StatusListener
 		currentStatus.setVisibility(View.GONE);
 
 		if (LagFixWorker.getBackgroundWorker().CurrentLagFixRunnable != null) {
-			currentStatus.setText(LagFixWorker.getBackgroundWorker().CurrentLagFixRunnable.CurrentLagFix.GetStatus());
+			currentStatus.setText(LagFixWorker.getBackgroundWorker().CurrentLagFixRunnable.CurrentLagFix.GetStatus().LogMessage);
 			currentStatus.setVisibility(View.VISIBLE);
 			currentStatus.setBackgroundColor(Color.rgb(65, 65, 0));
 		} else if (LagFixWorker.getBackgroundWorker().LastLagFixResult != null) {
@@ -68,9 +74,9 @@ public class ProgressViewActivity extends ListActivity implements StatusListener
 			}
 		}
 	}
-	
+
 	@Override
-	public void UpdateStatusForLagFix(final LagFix lagfix, final String Status) {
+	public void UpdateStatusForLagFix(final LagFix lagfix, final LogRow Status) {
 		runOnUiThread(new Runnable() {
 
 			@Override
@@ -78,12 +84,12 @@ public class ProgressViewActivity extends ListActivity implements StatusListener
 				TextView currentStatus = (TextView) findViewById(R.id.status);
 				TextView lastResult = (TextView) findViewById(R.id.lastresult);
 
-				currentStatus.setText(Status);
+				currentStatus.setText(Status.LogMessage);
 				currentStatus.setBackgroundColor(Color.rgb(65, 65, 0));
 
 				lastResult.setVisibility(View.GONE);
 				currentStatus.setVisibility(View.VISIBLE);
-				
+
 				LogListAdapter adapter = (LogListAdapter) getListAdapter();
 				adapter.logList.clear();
 				adapter.logList.addAll(lagfix.getStatusLog());
@@ -110,76 +116,85 @@ public class ProgressViewActivity extends ListActivity implements StatusListener
 
 				currentStatus.setVisibility(View.GONE);
 				lastResult.setVisibility(View.VISIBLE);
-				
+
 				if (!Success) {
 					showDialog(DIALOG_REQUEST_SENDLOG);
 				}
 			}
 		});
 	}
-	
+
 	@Override
 	protected Dialog onCreateDialog(int id) {
-	    final Dialog dialog;
-	    switch(id) {
-	    case DIALOG_REQUEST_SENDLOG:
-	    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-	    	builder.setMessage("This lagfix failed! Do you want to email the log to the developer so that it can be checked?")
-	    	       .setCancelable(true)
-	    	       .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-	    	           public void onClick(DialogInterface dialog, int id) {
-	    	                showDialog(DIALOG_REQUEST_SENDLOG_DETAILS);
-	    	           }
-	    	       })
-	    	       .setNegativeButton("No", new DialogInterface.OnClickListener() {
-	    	           public void onClick(DialogInterface dialog, int id) {
-	    	                dialog.cancel();
-	    	           }
-	    	       });
-	    	dialog = builder.create();
-	        return dialog;
-	    case DIALOG_REQUEST_SENDLOG_DETAILS:
-	    	dialog = new Dialog(this);
-	    	dialog.setCancelable(true);
-	    	dialog.setOwnerActivity(this);
+		final Dialog dialog;
+		switch (id) {
+			case DIALOG_REQUEST_SENDLOG :
+				AlertDialog.Builder builder = new AlertDialog.Builder(this);
+				builder.setMessage("This lagfix failed! Do you want to email the log to the developer so that it can be checked?").setCancelable(true)
+						.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								showDialog(DIALOG_REQUEST_SENDLOG_DETAILS);
+							}
+						}).setNegativeButton("No", new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								dialog.cancel();
+							}
+						});
+				dialog = builder.create();
+				return dialog;
+			case DIALOG_REQUEST_SENDLOG_DETAILS :
+				dialog = new Dialog(this);
+				dialog.setCancelable(true);
+				dialog.setOwnerActivity(this);
 
-	    	dialog.setContentView(R.layout.email_info_dialog);
-	    	dialog.setTitle("User Information");
+				dialog.setContentView(R.layout.email_info_dialog);
+				dialog.setTitle("User Information");
 
-	    	final EditText contact = (EditText) dialog.findViewById(R.id.contact);
-	    	final EditText firmware = (EditText) dialog.findViewById(R.id.firmware);
-	    	Button sendbutton = (Button) dialog.findViewById(R.id.sendbutton);
-	    	
-	    	sendbutton.setOnClickListener(new OnClickListener() {
-				
-				@Override
-				public void onClick(View v) {
-					StringBuilder buf = new StringBuilder();
-					buf.append("Contact: "+contact.getText().toString()+"\n");
-					buf.append("Firmware: "+firmware.getText().toString()+"\n");
-					buf.append("Version: "+QuickFixLagFix.VERSION+"\n");
-					buf.append("\n");
-					for (LogRow row : lagFix.getStatusLog()) {
-						buf.append(row.LogTime.toString()+": "+row.LogMessage+"\n");
+				final EditText contact = (EditText) dialog.findViewById(R.id.contact);
+				final EditText firmware = (EditText) dialog.findViewById(R.id.firmware);
+				Button sendbutton = (Button) dialog.findViewById(R.id.sendbutton);
+
+				sendbutton.setOnClickListener(new OnClickListener() {
+
+					@Override
+					public void onClick(View v) {
+						StringBuilder buf = new StringBuilder();
+						buf.append("Contact: " + contact.getText().toString() + "\n");
+						buf.append("Firmware: " + firmware.getText().toString() + "\n");
+						buf.append("Version: " + QuickFixLagFix.VERSION + "\n");
+						buf.append("\n");
+						for (LogRow row : lagFix.getStatusLog()) {
+							buf.append(row.LogTime.toString() + ": " + row.LogMessage + "\n");
+						}
+
+						Intent sendIntent = new Intent(Intent.ACTION_SEND);
+						sendIntent.putExtra(Intent.EXTRA_TEXT, buf.toString());
+						sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Error Log for " + lagFix.GetDisplayName());
+						sendIntent.putExtra(Intent.EXTRA_EMAIL, new String[]{lagFix.GetFeedbackLogEmailAddress()});
+						sendIntent.setType("message/rfc822");
+						startActivity(Intent.createChooser(sendIntent, "Title:"));
+
+						dialog.cancel();
 					}
-					
-					Intent sendIntent = new Intent(Intent.ACTION_SEND);
-					sendIntent.putExtra(Intent.EXTRA_TEXT, buf.toString());
-					sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Error Log for "+lagFix.GetDisplayName());
-					sendIntent.putExtra(Intent.EXTRA_EMAIL, new String[]{lagFix.GetFeedbackLogEmailAddress()});
-					sendIntent.setType("message/rfc822");
-					startActivity(Intent.createChooser(sendIntent, "Title:"));
-					
-					dialog.cancel();
-				}
-			});
-	        return dialog;
-	    }
-	    return null;
+				});
+				return dialog;
+		}
+		return null;
 	}
-	
+
 	@Override
 	public void Update(final int progress) {
+	}
+
+	@Override
+	public void NofifyChanged() {
+		runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				((LogListAdapter) getListAdapter()).notifyDataSetChanged();
+			}
+		});
 	}
 
 }

@@ -33,10 +33,11 @@ import com.rc.QuickFixLagFix.R;
 import com.rc.QuickFixLagFix.lib.LagFix;
 import com.rc.QuickFixLagFix.lib.LagFixWorker;
 import com.rc.QuickFixLagFix.lib.StatusListener;
+import com.rc.QuickFixLagFix.lib.LagFix.LogRow;
 
 public class QuickFixLagFix extends TabActivity implements StatusListener {
 
-	final static String VERSION = "2.0.4";
+	final static String VERSION = "2.2.4";
 	static final int DIALOG_FORCE_CLOSE = 0;
 	static final int DIALOG_HELP = 1;
 	public static final String PREFS_NAME = "OCLFPrefs";
@@ -99,7 +100,7 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 		currentStatus.setVisibility(View.GONE);
 
 		if (LagFixWorker.getBackgroundWorker().CurrentLagFixRunnable != null) {
-			currentStatus.setText(LagFixWorker.getBackgroundWorker().CurrentLagFixRunnable.CurrentLagFix.GetStatus());
+			currentStatus.setText(LagFixWorker.getBackgroundWorker().CurrentLagFixRunnable.CurrentLagFix.GetStatus().LogMessage);
 			currentStatus.setVisibility(View.VISIBLE);
 			currentStatus.setBackgroundColor(Color.rgb(65, 65, 0));
 		} else if (LagFixWorker.getBackgroundWorker().LastLagFixResult != null) {
@@ -126,7 +127,7 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 	}
 
 	@Override
-	public void UpdateStatusForLagFix(LagFix lagfix, final String Status) {
+	public void UpdateStatusForLagFix(LagFix lagfix, final LogRow Status) {
 		runOnUiThread(new Runnable() {
 
 			@Override
@@ -134,7 +135,7 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 				TextView currentStatus = (TextView) findViewById(R.id.status);
 				TextView lastResult = (TextView) findViewById(R.id.lastresult);
 
-				currentStatus.setText(Status);
+				currentStatus.setText(Status.LogMessage);
 				currentStatus.setBackgroundColor(Color.rgb(65, 65, 0));
 
 				lastResult.setVisibility(View.GONE);
@@ -204,6 +205,11 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 				return true;
 			case R.id.help :
 				showDialog(DIALOG_HELP);
+				return true;
+			case R.id.kernels :
+				i = new Intent(getApplicationContext(), KernelListActivity.class);
+				startActivity(i);
+				return true;
 			default :
 				return super.onOptionsItemSelected(item);
 		}
@@ -342,6 +348,10 @@ public class QuickFixLagFix extends TabActivity implements StatusListener {
 			return null;
 		}
 
+	}
+
+	@Override
+	public void NofifyChanged() {
 	}
 }
 

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
-import android.os.Build;
 
 import com.rc.QuickFixLagFix.R;
 import com.rc.QuickFixLagFix.LagFixOptions.LagFixOption;
@@ -19,12 +18,12 @@ public class RootLagFix extends LagFix {
 
 	@Override
 	public String GetDisplayName() {
-		return "Root Device 2.1";
+		return "Root Device Recovery 2e";
 	}
 
 	@Override
 	public String GetShortDescription() {
-		return "This will root your device.";
+		return "This will work on Android 2.1, or Android 2.2 with Recovery 2e kernel.";
 	}
 
 	@Override
@@ -44,9 +43,9 @@ public class RootLagFix extends LagFix {
 		if (r.success())
 			return "Your device is already rooted.";
 		
-		final int sdkVersion = Integer.parseInt(Build.VERSION.SDK);
-		if (sdkVersion != 7)
-			return "This only works on Android 2.1";
+//		final int sdkVersion = Integer.parseInt(Build.VERSION.SDK);
+//		if (sdkVersion != 7)
+//			return "This only works on Android 2.1";
 		
 		return ENABLED;
 	}

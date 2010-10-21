@@ -4,4 +4,5 @@
 	<item android:title="Force Close" android:id="@+id/exit"></item>
 	<item android:id="@+id/disableads" android:title="Disable Ads"></item>
 	<item android:title="Help" android:id="@+id/help"></item>
+	<item android:title="Kernels" android:id="@+id/kernels"></item>
 </menu>

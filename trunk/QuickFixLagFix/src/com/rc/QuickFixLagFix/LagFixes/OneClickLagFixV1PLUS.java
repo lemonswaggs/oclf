@@ -37,7 +37,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 
 	@Override
 	public String GetLongDescription() {
-		return "This is a clone of the RyanZA One Click Lag Fix 1.0 found on XDA Developers. It is implemented using Java instead of an 'sh' script. It contains a lot of checks. It will also do a check of the EXT2 on each boot, as well as including the /app and /app-private folders. This lag fix should not affect your apps or data.";
+		return "This is a clone of the RyanZA One Click Lag Fix 1.0 found on XDA Developers. It is implemented using Java instead of an 'sh' script. It contains a lot of checks. It will also do a check of the EXT2 on each boot, as well as including the /app and /app-private folders. This lag fix should not affect your apps or data.\n\nThe slider controls how big the EXT2 loopback partition will be. The bigger it is, the more space you will have available after the lagfix is installed. The problem with putting it all the way to the right is that when uninstalling, you may have to delete apps to get enough free space to copy them back to RFS. So the default is around 800-1200mb which generally works well for most people.\n\n";
 	}
 
 	@Override
@@ -223,6 +223,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 			UpdateStatus("System will reboot in 10 seconds, to ensure everything works properly.");
 			vt.FNF("sync");
 			Thread.sleep(10000);
+			vt.FNF("sync");
 			vt.FNF("reboot");
 		} finally {
 			Utils.DisableFlightMode(ApplicationContext);

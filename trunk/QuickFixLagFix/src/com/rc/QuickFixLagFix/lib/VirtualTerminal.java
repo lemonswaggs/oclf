@@ -5,11 +5,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import android.util.Log;
+
 public class VirtualTerminal {
 
 	DataOutputStream toProcess;
 	final Object ReadLock = new Object();
 	final Object WriteLock = new Object();
+	public String busybox = "/data/oclf/busybox";
 	
 	ByteArrayOutputStream inpbuffer = new ByteArrayOutputStream();
 	ByteArrayOutputStream errbuffer = new ByteArrayOutputStream();
@@ -32,7 +35,7 @@ public class VirtualTerminal {
 	}
 	
 	public VTCommandResult busybox(String command) throws Exception {
-		return runCommand("/data/oclf/busybox "+command);
+		return runCommand(busybox+" "+command);
 	}
 	
 //	public void busyboxFNF(String command) throws Exception {
@@ -40,6 +43,7 @@ public class VirtualTerminal {
 //	}
 	
 	public VTCommandResult runCommand(String command) throws Exception {
+		Log.i("oclf", command);
 		synchronized (WriteLock) {
 			inpbuffer.reset();
 			errbuffer.reset();
@@ -70,8 +74,10 @@ public class VirtualTerminal {
             		if (inp.contains(":RET=EOF") || err.contains(":RET=EOF"))
             			throw new BrokenPipeException();
                 	if (inp.contains(":RET=0")) {
+                		Log.i("oclf success", inp);
                 		return new VTCommandResult(0, inp, err);
                 	} else {
+                		Log.i("oclf error", err);
                 		return new VTCommandResult(1, inp, err);
                 	}
             	}

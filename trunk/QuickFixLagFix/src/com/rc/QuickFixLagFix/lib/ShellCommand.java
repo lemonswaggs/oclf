@@ -7,7 +7,8 @@ import java.io.InputStream;
 import android.util.Log;
 
 public class ShellCommand {
-	private static final String BUSYBOX = "/data/oclf/busybox";
+	public String busybox = "/data/oclf/busybox";
+	//private static final String BUSYBOX = "/data/oclf/busybox";
 		
     private static final String TAG = "ShellCommand.java";
     private Boolean can_su;    
@@ -77,7 +78,7 @@ public class ShellCommand {
             try {
                 process = Runtime.getRuntime().exec(SHELL);
                 DataOutputStream toProcess = new DataOutputStream(process.getOutputStream());
-                toProcess.writeBytes("exec "+BUSYBOX+" " + s + "\n");
+                toProcess.writeBytes("exec "+busybox+" " + s + "\n");
                 toProcess.flush();
             } catch(Exception e) {
                 Log.e(TAG, "Exception while trying to run: '" + s + "' " + e.getMessage());
