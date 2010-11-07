@@ -67,7 +67,23 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 			if (data_total != ext2data_total)
 				return "You do not appear to have a V2 lagfix installed! (free space on /data does not match /dbdata/ext2data)";
 		} catch (FileNotFoundException ex) {
-			return "You do not have a /system/bin/playlogos1 file!";
+			try {
+				rfile = new RandomAccessFile("/system/bin/playlogo", "r");
+				if (rfile.getChannel().size() > 5000)
+					return "You do not appear to have a lagfix installed. (/system/bin/playlogo greater than 5KB)";
+				StatFs statfs = new StatFs("/data/");
+				long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				File ext2data = new File("/dbdata/ext2data");
+				if (!ext2data.exists() || !ext2data.isDirectory()) {
+					return "You do not appear to have a V2 lagfix installed! (/dbdata/ext2data does not exist)";
+				}
+				statfs.restat("/dbdata/ext2data/");
+				long ext2data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				if (data_total != ext2data_total)
+					return "You do not appear to have a V2 lagfix installed! (free space on /data does not match /dbdata/ext2data)";
+			} catch (FileNotFoundException ex2) {
+				return "You do not have a /system/bin/playlogos1 file or a /system/bin/playlogo file!";
+			}
 		} finally {
 			Utils.CloseFile(rfile);
 		}
@@ -78,7 +94,12 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 			if (Utils.GetMD5Hash("/system/bin/playlogos1").equalsIgnoreCase(MD5Hashes.playlogos1_froyo))
 				return "You do not have a lagfix installed. playlogos1 matches original signature.";
 		} catch (FileNotFoundException ex) {
-			return "You do not have a /system/bin/playlogos1 file!";
+			try {
+				if (Utils.GetMD5Hash("/system/bin/playlogo").equalsIgnoreCase(MD5Hashes.playlogo_froyo))
+					return "You do not have a lagfix installed. playlogo matches original signature.";
+			} catch (FileNotFoundException ex2) {
+				return "You do not have a /system/bin/playlogos1 or /system/bin/playlogo file!";
+			}
 		}
 
 		try {
@@ -138,7 +159,10 @@ public class UndoOneClickLagFixV2PLUS extends LagFix {
 			// 'same file' for /data/wifi, etc. Need a workaround maybe?
 
 			UpdateStatus("Removing boot support");
-			Utils.RemoveBootSupport(vt);
+			if (new File("/system/bin/playlogos1").exists())
+				Utils.RemoveBootSupport(vt, "playlogos1");
+			else
+				Utils.RemoveBootSupport(vt, "playlogo");
 
 			UpdateStatus("Removing old datafile. If the system crashes at this point, just restart your device.");
 			vt.busybox("rm -rf /dbdata/rfsdata/ext2");

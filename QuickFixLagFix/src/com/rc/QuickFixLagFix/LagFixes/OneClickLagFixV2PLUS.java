@@ -83,7 +83,27 @@ public class OneClickLagFixV2PLUS extends LagFix {
 					return "You already appear to have another lag fix installed! (free space on /data matches /dbdata/ext2data)";
 			}
 		} catch (FileNotFoundException ex) {
-			return "You do not have a /system/bin/playlogos1 file!";
+			// Check for playlogo file for Tab
+			try {
+				rfile = new RandomAccessFile("/system/bin/playlogo", "r");
+				if (rfile.getChannel().size() < 5000)
+					return "You already appear to have another lag fix installed! (/system/bin/playlogo less than 5KB)";
+				statfs.restat("/data/");
+				long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				statfs.restat("/data/data/");
+				long datadata_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				if (data_total != datadata_total)
+					return "You already appear to have another lag fix installed! (free space on /data does not match /data/data)";
+				File ext2data = new File("/dbdata/ext2data");
+				if (ext2data.exists() && ext2data.isDirectory()) {
+					statfs.restat("/dbdata/ext2data/");
+					long ext2data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+					if (ext2data_total == data_total)
+						return "You already appear to have another lag fix installed! (free space on /data matches /dbdata/ext2data)";
+				}
+			} catch (FileNotFoundException ex2) {
+				return "You do not have a /system/bin/playlogos1 / /system/bin/playlogo file!"; 
+			}
 		} finally {
 			Utils.CloseFile(rfile);
 		}
@@ -140,27 +160,27 @@ public class OneClickLagFixV2PLUS extends LagFix {
 			}
 
 			UpdateStatus("Creating loopback device");
-			r = vt.busybox("mknod /dev/loop0 b 7 0");
+			r = vt.busybox("mknod /dev/loop5 b 7 5");
 			UpdateStatus("Linking loopback to the file store");
-			r = vt.busybox("losetup /dev/loop0 /dbdata/rfsdata/ext2/linux.ex2");
-			if (!r.success() && !r.stderr.trim().equalsIgnoreCase("losetup: /dev/loop0")) {
+			r = vt.busybox("losetup /dev/loop5 /dbdata/rfsdata/ext2/linux.ex2");
+			if (!r.success() && !r.stderr.trim().equalsIgnoreCase("losetup: /dev/loop5")) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
 				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
-				return "Could not link loopback device /dev/loop0 to /dbdata/rfsdata/ext2/linux.ex2! " + err;
+				return "Could not link loopback device /dev/loop5 to /dbdata/rfsdata/ext2/linux.ex2! " + err;
 			}
 			UpdateStatus("Creating the EXT2 filesystem");
-			r = vt.busybox("mkfs.ext2 -b 4096 /dev/loop0");
+			r = vt.busybox("mkfs.ext2 -b 4096 /dev/loop5");
 			vt.busybox("rm -rf /dbdata/ext2data");
 			vt.busybox("mkdir /dbdata/ext2data");
 			UpdateStatus("Mounting Device");
-			r = vt.runCommand("mount -t ext2 -o noatime,nodiratime,errors=continue /dev/loop0 /dbdata/ext2data");
+			r = vt.runCommand("mount -t ext2 -o noatime,nodiratime,errors=continue /dev/loop5 /dbdata/ext2data");
 			if (!r.success()) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
-				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("losetup -d /dev/loop5");
 				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
-				return "Could not mount loopback device /dev/loop0! " + err;
+				return "Could not mount loopback device /dev/loop5! " + err;
 			}
 
 			UpdateStatus("Override /data/linux.ex2 with a null mount, so it doesn't get copied across");
@@ -168,7 +188,7 @@ public class OneClickLagFixV2PLUS extends LagFix {
 			if (!r.success()) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
-				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("losetup -d /dev/loop5");
 				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
 				return "Could not mount null mount! " + err;
 			}
@@ -180,7 +200,7 @@ public class OneClickLagFixV2PLUS extends LagFix {
 				err = r.stderr;
 				r = vt.busybox("umount /dbdata/ext2data");
 				r = vt.busybox("umount /dbdata/rfsdata");
-				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("losetup -d /dev/loop5");
 				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
 				return "Could not copy over /data to EXT2: " + err;
 			}
@@ -192,14 +212,17 @@ public class OneClickLagFixV2PLUS extends LagFix {
 				err = r.stderr;
 				r = vt.busybox("umount /dbdata/ext2data");
 				r = vt.busybox("umount /dbdata/rfsdata");
-				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("losetup -d /dev/loop5");
 				r = vt.busybox("rm -rf /dbdata/rfsdata/ext2");
 				return "Could not copy over /data to EXT2: " + err;
 			}
 
 			UpdateStatus("Setting up boot support");
 			try {
-				Utils.SetupBootSupport("oclfv2plus.sh", vt);
+				if (new File("/system/bin/playlogos1").exists())
+					Utils.SetupBootSupport("oclfv2plus.sh", vt, "playlogos1");
+				else
+					Utils.SetupBootSupport("oclfv2plus.sh", vt, "playlogo");
 			} catch (Exception ex) {
 				return ex.getLocalizedMessage();
 			}

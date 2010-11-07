@@ -83,7 +83,27 @@ public class OneClickLagFixV1PLUS extends LagFix {
 					return "You already appear to have another lag fix installed! (free space on /data matches /dbdata/ext2data)";
 			}
 		} catch (FileNotFoundException ex) {
-			return "You do not have a /system/bin/playlogos1 file!";
+			// Check for playlogo file for Tab
+			try {
+				rfile = new RandomAccessFile("/system/bin/playlogo", "r");
+				if (rfile.getChannel().size() < 5000)
+					return "You already appear to have another lag fix installed! (/system/bin/playlogo less than 5KB)";
+				statfs.restat("/data/");
+				long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				statfs.restat("/data/data/");
+				long datadata_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				if (data_total != datadata_total)
+					return "You already appear to have another lag fix installed! (free space on /data does not match /data/data)";
+				File ext2data = new File("/dbdata/ext2data");
+				if (ext2data.exists() && ext2data.isDirectory()) {
+					statfs.restat("/dbdata/ext2data/");
+					long ext2data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+					if (ext2data_total == data_total)
+						return "You already appear to have another lag fix installed! (free space on /data matches /dbdata/ext2data)";
+				}
+			} catch (FileNotFoundException ex2) {
+				return "You do not have a /system/bin/playlogos1 / /system/bin/playlogo file!"; 
+			}
 		} finally {
 			Utils.CloseFile(rfile);
 		}
@@ -128,27 +148,27 @@ public class OneClickLagFixV1PLUS extends LagFix {
 			}
 
 			UpdateStatus("Creating loopback device");
-			r = vt.busybox("mknod /dev/loop0 b 7 0");
+			r = vt.busybox("mknod /dev/loop5 b 7 5");
 			UpdateStatus("Linking loopback to the file store");
-			r = vt.busybox("losetup /dev/loop0 /data/linux.ex2");
+			r = vt.busybox("losetup /dev/loop5 /data/linux.ex2");
 			if (!r.success()) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
 				r = vt.busybox("rm /data/linux.ex2");
-				return "Could not link loopback device /dev/loop0 to /data/linux.ex2! " + err;
+				return "Could not link loopback device /dev/loop5 to /data/linux.ex2! " + err;
 			}
 			UpdateStatus("Creating the EXT2 filesystem");
-			r = vt.busybox("mkfs.ext2 -b 4096 /dev/loop0");
+			r = vt.busybox("mkfs.ext2 -b 4096 /dev/loop5");
 			vt.busybox("rm -rf /data/ext2data");
 			vt.busybox("mkdir /data/ext2data");
 			UpdateStatus("Mounting Device");
-			r = vt.runCommand("mount -t ext2 -o noatime,nodiratime,errors=continue /dev/loop0 /data/ext2data");
+			r = vt.runCommand("mount -t ext2 -o noatime,nodiratime,errors=continue /dev/loop5 /data/ext2data");
 			if (!r.success()) {
 				UpdateStatus("Hit an error, undoing lagfix!");
 				err = r.stderr;
-				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("losetup -d /dev/loop5");
 				r = vt.busybox("rm /data/linux.ex2");
-				return "Could not mount loopback device /dev/loop0! " + err;
+				return "Could not mount loopback device /dev/loop5! " + err;
 			}
 
 			for (String dir : dataDirectories) {
@@ -158,7 +178,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 					UpdateStatus("Hit an error, undoing lagfix!");
 					err = r.stderr;
 					r = vt.busybox("umount /data/ext2data");
-					r = vt.busybox("losetup -d /dev/loop0");
+					r = vt.busybox("losetup -d /dev/loop5");
 					r = vt.busybox("rm /data/linux.ex2");
 					return "Could not copy over " + dir + ": " + err;
 				}
@@ -177,7 +197,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 						r = vt.busybox("mv /data/" + dir2 + ".bak /data/" + dir2);
 					}
 					r = vt.busybox("umount /data/ext2data");
-					r = vt.busybox("losetup -d /dev/loop0");
+					r = vt.busybox("losetup -d /dev/loop5");
 					r = vt.busybox("rm /data/linux.ex2");
 					return "Could not rename folder " + dir + "! " + err;
 				}
@@ -194,7 +214,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 						r = vt.busybox("mv /data/" + dir2 + ".bak /data/" + dir2);
 					}
 					r = vt.busybox("umount /data/ext2data");
-					r = vt.busybox("losetup -d /dev/loop0");
+					r = vt.busybox("losetup -d /dev/loop5");
 					r = vt.busybox("rm /data/linux.ex2");
 					return "Could not create link for " + dir + "! " + err;
 				}
@@ -202,7 +222,10 @@ public class OneClickLagFixV1PLUS extends LagFix {
 
 			UpdateStatus("Setting up boot support");
 			try {
-				Utils.SetupBootSupport("oclfv1plus.sh", vt);
+				if (new File("/system/bin/playlogos1").exists())
+					Utils.SetupBootSupport("oclfv1plus.sh", vt, "playlogos1");
+				else
+					Utils.SetupBootSupport("oclfv1plus.sh", vt, "playlogo");
 			} catch (Exception ex) {
 				UpdateStatus("Error while setting up boot support! Undoing lag fix.");
 				for (String dir2 : dataDirectories) {
@@ -211,7 +234,7 @@ public class OneClickLagFixV1PLUS extends LagFix {
 					r = vt.busybox("mv /data/" + dir2 + ".bak /data/" + dir2);
 				}
 				r = vt.busybox("umount /data/ext2data");
-				r = vt.busybox("losetup -d /dev/loop0");
+				r = vt.busybox("losetup -d /dev/loop5");
 				r = vt.busybox("rm /data/linux.ex2");
 				return ex.getLocalizedMessage();
 			}

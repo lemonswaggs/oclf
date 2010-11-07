@@ -16,6 +16,7 @@ import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 import com.rc.QuickFixLagFix.lib.Utils;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
+import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 
 public class RestorePlaylogos1 extends LagFix {
 
@@ -78,30 +79,46 @@ public class RestorePlaylogos1 extends LagFix {
 		if (sdkVersion != 7 && sdkVersion != 8)
 			return "This only works on Eclair or Froyo";
 
-		if (!LagfixInstalled) {
-			UpdateStatus("Removing any old playlogos1 file");
-			vt.busybox("rm /system/bin/playlogos1");
-			if (sdkVersion == 7) {
-				UpdateStatus("Copying over included eclair playlogos1 file");
-				Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogos1", ApplicationContext, vt);
+		if (new File("/system/bin/playlogos1").exists()) {
+			if (!LagfixInstalled) {
+				UpdateStatus("Removing any old playlogos1 file");
+				vt.busybox("rm /system/bin/playlogos1");
+				if (sdkVersion == 7) {
+					UpdateStatus("Copying over included eclair playlogos1 file");
+					Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogos1", ApplicationContext, vt);
+				} else {
+					UpdateStatus("Copying over included froyo playlogos1 file");
+					Utils.CopyIncludedFiletoPath(R.raw.playlogosnowfroyo, "playlogosnow", "/system/bin/playlogos1", ApplicationContext, vt);
+				}
+				UpdateStatus("Setting permissions...");
+				vt.busybox("chmod 755 /system/bin/playlogos1");
 			} else {
-				UpdateStatus("Copying over included froyo playlogos1 file");
-				Utils.CopyIncludedFiletoPath(R.raw.playlogosnowfroyo, "playlogosnow", "/system/bin/playlogos1", ApplicationContext, vt);
+				UpdateStatus("You already appear to have a lagfix installed. Updating playlogosnow instead of playlogos1");
+				vt.busybox("rm /system/bin/playlogosnow");
+				if (sdkVersion == 7) {
+					UpdateStatus("Copying over included eclair playlogos1 file");
+					Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogosnow", ApplicationContext, vt);
+				} else {
+					UpdateStatus("Copying over included froyo playlogos1 file");
+					Utils.CopyIncludedFiletoPath(R.raw.playlogosnowfroyo, "playlogosnow", "/system/bin/playlogosnow", ApplicationContext, vt);
+				}
+				UpdateStatus("Setting permissions...");
+				vt.busybox("chmod 755 /system/bin/playlogosnow");
 			}
-			UpdateStatus("Setting permissions...");
-			vt.busybox("chmod 755 /system/bin/playlogos1");
 		} else {
-			UpdateStatus("You already appear to have a lagfix installed. Updating playlogosnow instead of playlogos1");
-			vt.busybox("rm /system/bin/playlogosnow");
-			if (sdkVersion == 7) {
-				UpdateStatus("Copying over included eclair playlogos1 file");
-				Utils.CopyIncludedFiletoPath(R.raw.playlogosnow, "playlogosnow", "/system/bin/playlogosnow", ApplicationContext, vt);
+			if (!LagfixInstalled) {
+				UpdateStatus("Moving playlogosnow file to playlogo file");
+				VTCommandResult r = vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogo");
+				if (!r.success())
+					return "Error: 'mv /system/bin/playlogosnow /system/bin/playlogo' failed with: "+r.stderr;
 			} else {
+				UpdateStatus("You already appear to have a lagfix installed. Updating playlogosnow instead of playlogo");
+				vt.busybox("rm /system/bin/playlogosnow");
 				UpdateStatus("Copying over included froyo playlogos1 file");
 				Utils.CopyIncludedFiletoPath(R.raw.playlogosnowfroyo, "playlogosnow", "/system/bin/playlogosnow", ApplicationContext, vt);
+				UpdateStatus("Setting permissions...");
+				vt.busybox("chmod 755 /system/bin/playlogosnow");
 			}
-			UpdateStatus("Setting permissions...");
-			vt.busybox("chmod 755 /system/bin/playlogosnow");
 		}
 
 		return SUCCESS;

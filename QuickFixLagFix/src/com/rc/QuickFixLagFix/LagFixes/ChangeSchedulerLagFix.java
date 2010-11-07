@@ -150,29 +150,29 @@ public class ChangeSchedulerLagFix extends LagFix {
 		if (lf != null) lf.UpdateStatus("Remounting with 'noatime'");
 		String[] mounts = new String[]{"/system", "/data", "/dbdata", "/cache"};
 		for (String mount : mounts) {
-			vt.busybox("sync");
-			vt.busybox("mount -o remount,noatime "+mount);
+			vt.runCommand("sync");
+			vt.runCommand("mount -o remount,noatime "+mount);
 		}
 		if (SchedType.equals("cfq")) {
 			if (lf != null) lf.UpdateStatus("cfq scheduler set, using cfq optimizations...");
 			for (String blkdev : BlockDevices) {
-				vt.busybox("echo 0 > /sys/block/"+blkdev+"/queue/rotational");
-				vt.busybox("echo 1 > /sys/block/"+blkdev+"/queue/iosched/low_latency");
-				vt.busybox("echo 1 > /sys/block/"+blkdev+"/queue/iosched/back_seek_penalty");
-				vt.busybox("echo 1000000000 > /sys/block/"+blkdev+"/queue/iosched/back_seek_max");
-				vt.busybox("echo 3 > /sys/block/"+blkdev+"/queue/iosched/slice_idle");
+				vt.runCommand("echo 0 > /sys/block/"+blkdev+"/queue/rotational");
+				vt.runCommand("echo 1 > /sys/block/"+blkdev+"/queue/iosched/low_latency");
+				vt.runCommand("echo 1 > /sys/block/"+blkdev+"/queue/iosched/back_seek_penalty");
+				vt.runCommand("echo 1000000000 > /sys/block/"+blkdev+"/queue/iosched/back_seek_max");
+				vt.runCommand("echo 3 > /sys/block/"+blkdev+"/queue/iosched/slice_idle");
 			}
 		}
 		if (lf != null) lf.UpdateStatus("Tweak kernel VM management");
-		vt.busybox("echo 0 > /proc/sys/vm/swappiness");
-		vt.busybox("echo 10 > /proc/sys/vm/dirty_ratio");
-		vt.busybox("echo 1000 > /proc/sys/vm/vfs_cache_pressure");
-		vt.busybox("echo 4096 > /proc/sys/vm/min_free_kbytes");
+		vt.runCommand("echo 0 > /proc/sys/vm/swappiness");
+		vt.runCommand("echo 10 > /proc/sys/vm/dirty_ratio");
+		vt.runCommand("echo 1000 > /proc/sys/vm/vfs_cache_pressure");
+		vt.runCommand("echo 4096 > /proc/sys/vm/min_free_kbytes");
 
 		if (lf != null) lf.UpdateStatus("Tweak kernel scheduler");
-		vt.busybox("echo 2000000 > /proc/sys/kernel/sched_latency_ns");
-		vt.busybox("echo 500000 > /proc/sys/kernel/sched_wakeup_granularity_ns");
-		vt.busybox("echo 400000 > /proc/sys/kernel/sched_min_granularity_ns");
+		vt.runCommand("echo 2000000 > /proc/sys/kernel/sched_latency_ns");
+		vt.runCommand("echo 500000 > /proc/sys/kernel/sched_wakeup_granularity_ns");
+		vt.runCommand("echo 400000 > /proc/sys/kernel/sched_min_granularity_ns");
 		
 		if (lf != null) lf.UpdateStatus("Misc Tweaks");
 		vt.runCommand("setprop dalvik.vm.startheapsize 8m");

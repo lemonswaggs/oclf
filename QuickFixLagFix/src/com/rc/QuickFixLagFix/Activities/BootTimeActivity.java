@@ -10,6 +10,7 @@ import com.rc.QuickFixLagFix.LagFixes.ChangeSchedulerLagFix;
 import com.rc.QuickFixLagFix.LagFixes.MinFreeLagFix;
 import com.rc.QuickFixLagFix.lib.ShellCommand;
 import com.rc.QuickFixLagFix.lib.VirtualTerminal;
+import com.rc.QuickFixLagFix.lib.ShellCommand.CommandResult;
 
 public class BootTimeActivity extends BroadcastReceiver {
 
@@ -20,19 +21,23 @@ public class BootTimeActivity extends BroadcastReceiver {
 	
 	void SetScheduler(String SchedType) throws Exception {
 		ShellCommand sc = new ShellCommand();
+		sc.busybox = "busybox";
 		for (String blockdev : ChangeSchedulerLagFix.BlockDevices) {
 			Log.i("OCLF", "echo " + SchedType + " > /sys/block/"+blockdev+"/queue/scheduler");
-			sc.su.run("echo " + SchedType + " > /sys/block/"+blockdev+"/queue/scheduler");
+			CommandResult r = sc.su.busyboxWaitFor("echo " + SchedType + " > /sys/block/"+blockdev+"/queue/scheduler");
+			Log.i("OCLF", "success: "+r.success()+" "+r.stderr+" "+r.stdout);
 		}
 	}
 	
 	void SetMinFree(String preset) throws Exception {
 		ShellCommand sc = new ShellCommand();
+		sc.busybox = "busybox";
 		for (int i=0;i<MinFreeLagFix.Presets.length;i++) {
 			String presetname = MinFreeLagFix.Presets[i];
 			if (presetname.equals(preset)) {
 				Log.i("OCLF", "echo \""+MinFreeLagFix.PresetValues[i]+"\" > /sys/module/lowmemorykiller/parameters/minfree");
-				sc.su.run("echo \""+MinFreeLagFix.PresetValues[i]+"\" > /sys/module/lowmemorykiller/parameters/minfree");
+				CommandResult r = sc.su.busyboxWaitFor("echo \""+MinFreeLagFix.PresetValues[i]+"\" > /sys/module/lowmemorykiller/parameters/minfree");
+				Log.i("OCLF", "success: "+r.success()+" "+r.stderr+" "+r.stdout);
 			}
 		}
 	}
