@@ -129,7 +129,11 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 	@Override
 	public String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error {
 		UpdateStatus("Enabling Flight Mode and killing all running apps.");
-		Utils.EnableFlightMode(ApplicationContext);
+		try {
+			Utils.EnableFlightMode(ApplicationContext);
+		} catch (Exception ex) {
+			UpdateStatus("Could not enable flight mode!");
+		}
 		try {
 			Utils.KillAllRunningApps(ApplicationContext);
 
@@ -181,7 +185,11 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 			Thread.sleep(10000);
 			vt.FNF("reboot");
 		} finally {
-			Utils.DisableFlightMode(ApplicationContext);
+			try {
+				Utils.DisableFlightMode(ApplicationContext);
+			} catch (Exception ex) {
+				UpdateStatus("Could not disable flight mode!");
+			}	
 		}
 		return SUCCESS;
 	}
