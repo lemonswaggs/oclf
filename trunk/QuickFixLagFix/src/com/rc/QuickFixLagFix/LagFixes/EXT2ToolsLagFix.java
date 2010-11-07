@@ -93,19 +93,8 @@ public class EXT2ToolsLagFix extends LagFix {
 
 	@Override
 	public String Run(Map<String, String> options, Context ApplicationContext, VirtualTerminal vt) throws Exception, Error {
-		VTCommandResult cr = vt.runCommand("mount");
-		if (cr.stdout.contains("/dev/block/stl9 /system rfs ro")) {
-			UpdateStatus("Your /system appears to be read only, remounts as read-write");
-			cr = vt.runCommand("mount -o remount,rw /dev/block/stl9 /system");
-			if (!cr.success()) {
-				return "Could not mount /system as read-write: "+cr.stderr;
-			}
-		}		
 		UpdateStatus("Creating folder /data/oclf");
 		vt.runCommand("mkdir /data/oclf");
-		if (!cr.success())
-			if (!cr.stderr.contains("File exists"))
-				return "Could not create folder /data/oclf: "+cr.stderr;
 
 		UpdateStatus("Saving binaries to disk...");
 		

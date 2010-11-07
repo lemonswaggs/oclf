@@ -1,18 +1,31 @@
 package com.rc.QuickFixLagFix.lib;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
@@ -20,6 +33,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.rc.QuickFixLagFix.R;
 import com.rc.QuickFixLagFix.lib.LagFix.LogRow;
@@ -112,29 +126,29 @@ public class Utils {
 		fos.close();
 	}
 
-	public static void SetupBootSupport(String filename, VirtualTerminal vt) throws Exception {
-		VTCommandResult r = vt.busybox("mv /system/bin/playlogos1 /system/bin/playlogosnow");
+	public static void SetupBootSupport(String filename, VirtualTerminal vt, String playlogos) throws Exception {
+		VTCommandResult r = vt.busybox("mv /system/bin/" + playlogos + " /system/bin/playlogosnow");
 		if (!r.success()) {
-			throw new Exception("Could not mv playlogos1 to playlogosnow - " + r.stderr);
+			throw new Exception("Could not mv " + playlogos + " to playlogosnow - " + r.stderr);
 		}
-		r = vt.busybox("cp /data/oclf/bootsupport/playlogos1 /system/bin/playlogos1");
+		r = vt.busybox("cp /data/oclf/bootsupport/playlogos1 /system/bin/" + playlogos);
 		if (!r.success()) {
-			vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
-			throw new Exception("Could not copy included playlogos1 script to /system/bin/playlogos1 - " + r.stderr);
+			vt.busybox("mv /system/bin/playlogosnow /system/bin/" + playlogos);
+			throw new Exception("Could not copy included " + playlogos + " script to /system/bin/" + playlogos + " - " + r.stderr);
 		}
 		r = vt.busybox("cp /data/oclf/bootsupport/" + filename + " /system/bin/userinit.sh");
 		if (!r.success()) {
-			vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
+			vt.busybox("mv /system/bin/playlogosnow /system/bin/" + playlogos);
 			throw new Exception("Could not copy included " + filename + " script to /system/bin/userinit.sh - " + r.stderr);
 		}
-		r = vt.busybox("chmod 755 /system/bin/playlogos1");
+		r = vt.busybox("chmod 755 /system/bin/" + playlogos);
 		if (!r.success()) {
-			vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
-			throw new Exception("Could not set up permissions for /system/bin/playlogos1 script - " + r.stderr);
+			vt.busybox("mv /system/bin/playlogosnow /system/bin/" + playlogos);
+			throw new Exception("Could not set up permissions for /system/bin/" + playlogos + " script - " + r.stderr);
 		}
 		r = vt.busybox("chmod 755 /system/bin/userinit.sh");
 		if (!r.success()) {
-			vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
+			vt.busybox("mv /system/bin/playlogosnow /system/bin/" + playlogos);
 			throw new Exception("Could not set up permissions for /system/bin/userinit.sh script - " + r.stderr);
 		}
 	}
@@ -155,20 +169,20 @@ public class Utils {
 		}
 	}
 
-	public static void RemoveBootSupport(VirtualTerminal vt) throws Exception {
-		vt.busybox("mv /system/bin/playlogosnow /system/bin/playlogos1");
+	public static void RemoveBootSupport(VirtualTerminal vt, String playlogos) throws Exception {
+		vt.busybox("mv /system/bin/playlogosnow /system/bin/" + playlogos);
 		vt.busybox("rm /system/bin/userinit.sh");
 	}
 
 	public static String FormatByte(long bytes) {
 		if (bytes < 1024L)
 			return Long.toString(bytes) + " bytes";
-		if (bytes < 1024L*1024L)
+		if (bytes < 1024L * 1024L)
 			return Long.toString(bytes / 1024L) + " KB";
-		if (bytes < 10L*1024L*1024L) {
+		if (bytes < 10L * 1024L * 1024L) {
 			String MB = Long.toString(bytes / 1024L / 1024L);
-			String Frac = "."+((((bytes / 1024L) % 1024L)*100L)/1024L);
-			return MB+Frac+" MB";
+			String Frac = "." + ((((bytes / 1024L) % 1024L) * 100L) / 1024L);
+			return MB + Frac + " MB";
 		}
 		return Long.toString(bytes / 1024L / 1024L) + " MB";
 	}
@@ -263,7 +277,7 @@ public class Utils {
 		fos.getChannel().force(true);
 		fos.flush();
 		fos.close();
-		
+
 		lr.LogMessage = "Download complete";
 		lr.LogTime = new Date();
 		try {

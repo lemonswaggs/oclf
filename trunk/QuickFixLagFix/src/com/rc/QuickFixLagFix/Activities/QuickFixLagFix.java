@@ -37,7 +37,7 @@ import com.rc.QuickFixLagFix.lib.LagFix.LogRow;
 
 public class QuickFixLagFix extends TabActivity implements StatusListener {
 
-	final static String VERSION = "2.2.4";
+	final static String VERSION = "2.2.8";
 	static final int DIALOG_FORCE_CLOSE = 0;
 	static final int DIALOG_HELP = 1;
 	public static final String PREFS_NAME = "OCLFPrefs";

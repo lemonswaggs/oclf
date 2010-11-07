@@ -130,7 +130,10 @@ public class LagFixWorker {
 				VirtualTerminal vt = null;
 				try {
 					vt = new VirtualTerminal();
+					String temp = vt.busybox;
+					vt.busybox = "busybox";
 					vt.busybox("mount -o remount,rw /system");
+					vt.busybox = temp;
 				} catch (Exception ex) {
 				}
 				try {

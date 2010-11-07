@@ -1,5 +1,6 @@
 package com.rc.QuickFixLagFix.LagFixes;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import com.rc.QuickFixLagFix.lib.VirtualTerminal.VTCommandResult;
 public class UndoOneClickLagFixV1PLUS extends LagFix {
 
 	final static String[] dataDirectories = new String[]{"data", "system", "dalvik-cache", "app", "app-private"};
-	
+
 	@Override
 	public String GetDisplayName() {
 		return "Undo OneClickLagFix V1+";
@@ -54,12 +55,13 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 		long bytecountused_ext2 = (long) statfs.getBlockCount() * (long) statfs.getBlockSize() - bytecountfree_ext2;
 
 		if (bytecountused_ext2 > bytecountfree_rfs)
-			return "You have only "+Utils.FormatByte(bytecountfree_rfs)+" free on RFS, but "+Utils.FormatByte(bytecountused_ext2)+" used on EXT2. You must free up some space.";
+			return "You have only " + Utils.FormatByte(bytecountfree_rfs) + " free on RFS, but " + Utils.FormatByte(bytecountused_ext2)
+					+ " used on EXT2. You must free up some space.";
 
 		if (Utils.GetBatteryLevel(ApplicationContext) < 40) {
 			return "You need at least 40% battery charge to use this fix.";
 		}
-		
+
 		RandomAccessFile rfile = null;
 		try {
 			rfile = new RandomAccessFile("/system/bin/playlogos1", "r");
@@ -72,18 +74,30 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 			if (data_total == datadata_total)
 				return "You do not appear to have a V1 lagfix installed! (free space on /data matches /data/data)";
 		} catch (FileNotFoundException ex) {
-			return "You do not have a /system/bin/playlogos1 file!";
+			try {
+				rfile = new RandomAccessFile("/system/bin/playlogo", "r");
+				if (rfile.getChannel().size() > 5000)
+					return "You do not appear to have a lagfix installed. (/system/bin/playlogo greater than 5KB)";
+				statfs.restat("/data/");
+				long data_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				statfs.restat("/data/data/");
+				long datadata_total = (long) statfs.getBlockCount() * (long) statfs.getBlockSize();
+				if (data_total == datadata_total)
+					return "You do not appear to have a V1 lagfix installed! (free space on /data matches /data/data)";
+			} catch (FileNotFoundException ex2) {
+				return "You do not have a /system/bin/playlogos1 file or a /system/bin/playlogo file!";
+			}
 		} finally {
 			Utils.CloseFile(rfile);
 		}
-		
+
 		try {
 			if (Utils.GetMD5Hash("/system/bin/playlogos1").equalsIgnoreCase(MD5Hashes.playlogos1_eclair))
 				return "You do not have a lagfix installed. playlogos1 matches original signature.";
 		} catch (FileNotFoundException ex) {
 			return "You do not have a /system/bin/playlogos1 file!";
 		}
-		
+
 		try {
 			rfile = new RandomAccessFile("/system/bin/playlogosnow", "r");
 			if (rfile.getChannel().size() < 5000)
@@ -93,19 +107,19 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 		} finally {
 			Utils.CloseFile(rfile);
 		}
-		
+
 		try {
 			String Hash = Utils.GetMD5Hash("/system/bin/userinit.sh");
-			if (!Hash.equalsIgnoreCase(MD5Hashes.oclfv1_plus)) 
+			if (!Hash.equalsIgnoreCase(MD5Hashes.oclfv1_plus))
 				return "You do not have OCLF V1 PLUS installed. userinit.sh does not match signature.";
 		} catch (FileNotFoundException ex) {
 			return "You do not have OCLF V1 PLUS installed. userinit.sh not found.";
 		}
-		
+
 		for (String dir : dataDirectories) {
 			r = cmd.su.busyboxWaitFor("test -L /data/" + dir);
 			if (!r.success()) {
-				return "You do not have OCLF V1 installed. /data/"+dir+" is not a symlink";
+				return "You do not have OCLF V1 installed. /data/" + dir + " is not a symlink";
 			}
 		}
 
@@ -118,42 +132,47 @@ public class UndoOneClickLagFixV1PLUS extends LagFix {
 		Utils.EnableFlightMode(ApplicationContext);
 		try {
 			Utils.KillAllRunningApps(ApplicationContext);
-			
+
 			UpdateStatus("Removing old backups");
 			for (String dir : dataDirectories) {
 				vt.busybox("rm -rf /data/" + dir + ".bak");
 			}
-			
+
 			vt.busybox("rm -rf /data/bak");
 			vt.busybox("mkdir -p /data/bak");
 			for (String dir : dataDirectories) {
-				UpdateStatus("Copying "+dir+" back to RFS from EXT2");
-				vt.busybox("cp -rp /data/ext2data/"+dir+" /data/bak/"+dir );
-//				VTCommandResult r = vt.busybox("cp -rp /data/ext2data/"+dir+" /data/bak/"+dir );
-//				if (!r.success()) {
-//					vt.busybox("rm -rf /data/bak");
-//					return "Could not copy your data back! This is probably because something changed in your data while the undo was running. Try it again, and see if the problem persists. Error: "+r.stderr;
-//				}	
+				UpdateStatus("Copying " + dir + " back to RFS from EXT2");
+				vt.busybox("cp -rp /data/ext2data/" + dir + " /data/bak/" + dir);
+				// VTCommandResult r =
+				// vt.busybox("cp -rp /data/ext2data/"+dir+" /data/bak/"+dir );
+				// if (!r.success()) {
+				// vt.busybox("rm -rf /data/bak");
+				// return
+				// "Could not copy your data back! This is probably because something changed in your data while the undo was running. Try it again, and see if the problem persists. Error: "+r.stderr;
+				// }
 			}
-			
+
 			UpdateStatus("Removing Symlinks, possible FCs at this point.");
 			for (String dir : dataDirectories) {
 				VTCommandResult r = vt.busybox("rm /data/" + dir);
 				if (!r.success()) {
 					return "Could not remove symlinks! This is bad, and something has gone very wrong.";
-				}				
+				}
 			}
-			
+
 			for (String dir : dataDirectories) {
-				VTCommandResult r = vt.busybox("mv /data/bak/" + dir+" /data/"+dir);
+				VTCommandResult r = vt.busybox("mv /data/bak/" + dir + " /data/" + dir);
 				if (!r.success()) {
 					return "Could not rename your data! This is bad, and something has gone very wrong.";
-				}				
+				}
 			}
-			
+
 			UpdateStatus("Removing boot support");
-			Utils.RemoveBootSupport(vt);
-			
+			if (new File("/system/bin/playlogos1").exists())
+				Utils.RemoveBootSupport(vt, "playlogos1");
+			else
+				Utils.RemoveBootSupport(vt, "playlogo");
+
 			UpdateStatus("Removing old datafile");
 			vt.busybox("rm /data/linux.ex2");
 
